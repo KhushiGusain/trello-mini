@@ -1,4 +1,5 @@
-export { Input } from './Input';
-export { Button } from './Button';
-export { Checkbox } from './Checkbox';
-export { PasswordStrength } from './PasswordStrength';
+export { Button } from './Button'
+export { Input } from './Input'
+export { Checkbox } from './Checkbox'
+export { PasswordStrength } from './PasswordStrength'
+export { Modal } from './Modal'
