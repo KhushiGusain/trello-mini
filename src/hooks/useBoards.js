@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 export function useBoards() {
   const [boards, setBoards] = useState([])
@@ -14,26 +14,63 @@ export function useBoards() {
   })
   const [isCreating, setIsCreating] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState(null)
+
+  const fetchBoards = async () => {
+    try {
+      setError(null)
+      const response = await fetch('/api/boards')
+      
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || `HTTP error! status: ${response.status}`)
+      }
+      
+      const data = await response.json()
+      setBoards(data || [])
+    } catch (error) {
+      setError(error.message)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchBoards()
+  }, [])
 
   const handleCreateBoard = async () => {
     if (!newBoardData.title.trim()) return
 
     setIsCreating(true)
+    setError(null)
     try {
-      const newBoard = {
-        id: Date.now().toString(),
-        title: newBoardData.title,
-        visibility: newBoardData.visibility,
-        backgroundColor: newBoardData.backgroundColor,
-        workspace: 'Personal',
-        createdAt: new Date().toISOString()
+      const response = await fetch('/api/boards', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          title: newBoardData.title,
+          visibility: newBoardData.visibility,
+          backgroundColor: newBoardData.backgroundColor
+        }),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || `HTTP error! status: ${response.status}`)
       }
 
-      setBoards(prev => [newBoard, ...prev])
+      const data = await response.json()
+      
+      setBoards(prev => [data, ...prev])
       setNewBoardData({ title: '', visibility: 'workspace', backgroundColor: '#3a72ee' })
       setIsCreateModalOpen(false)
     } catch (error) {
-      console.error('Error creating board:', error)
+      setError(error.message)
+      alert(error.message)
     } finally {
       setIsCreating(false)
     }
@@ -48,12 +85,23 @@ export function useBoards() {
     if (!boardToDelete) return
 
     setIsDeleting(true)
+    setError(null)
     try {
+      const response = await fetch(`/api/boards/${boardToDelete.id}`, {
+        method: 'DELETE',
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || `HTTP error! status: ${response.status}`)
+      }
+
       setBoards(prev => prev.filter(board => board.id !== boardToDelete.id))
       setBoardToDelete(null)
       setIsDeleteModalOpen(false)
     } catch (error) {
-      console.error('Error deleting board:', error)
+      setError(error.message)
+      alert(error.message)
     } finally {
       setIsDeleting(false)
     }
@@ -66,6 +114,8 @@ export function useBoards() {
   return {
     boards,
     setBoards,
+    isLoading,
+    error,
     isCreateModalOpen,
     setIsCreateModalOpen,
     isDeleteModalOpen,
@@ -79,6 +129,7 @@ export function useBoards() {
     handleCreateBoard,
     handleDeleteBoard,
     confirmDeleteBoard,
-    resetBoardData
+    resetBoardData,
+    fetchBoards
   }
 }

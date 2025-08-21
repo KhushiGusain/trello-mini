@@ -14,6 +14,16 @@ export const useAuth = () => {
   return context
 }
 
+const syncTokenToCookies = (token) => {
+  if (typeof window === 'undefined') return
+  
+  try {
+    document.cookie = `sb-auth-token=${token}; path=/; max-age=3600; SameSite=Lax`
+  } catch (error) {
+    console.log('Failed to sync token to cookies:', error)
+  }
+}
+
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -21,26 +31,50 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     const getSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession()
-      setUser(session?.user ?? null)
-      setLoading(false)
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession()
+        
+        if (error) {
+          console.error('Error getting session:', error)
+        }
+        
+        setUser(session?.user ?? null)
+        setLoading(false)
+      } catch (error) {
+        setLoading(false)
+      }
     }
 
     getSession()
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
+      async (event, session) => {
         setUser(session?.user ?? null)
         setLoading(false)
+        
+        if (event === 'SIGNED_IN' && session) {
+          router.push('/boards')
+        }
+        
+        if (event === 'SIGNED_OUT') {
+          document.cookie = 'sb-auth-token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT'
+        }
       }
     )
 
     return () => subscription.unsubscribe()
-  }, [])
+  }, [router])
 
   const handleSignOut = async () => {
-    await supabase.auth.signOut()
-    router.push('/auth/login')
+    try {
+      const { error } = await supabase.auth.signOut()
+      if (error) {
+        console.error('Error signing out:', error)
+      }
+      router.push('/auth/login')
+    } catch (error) {
+      console.error('Error signing out:', error)
+    }
   }
 
   const value = {

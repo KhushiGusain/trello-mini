@@ -2,13 +2,13 @@
 
 import { useAuth } from '@/contexts/AuthContext'
 import { useRouter } from 'next/navigation'
-import { useEffect } from 'react'
+import { useEffect, use } from 'react'
 import { Button } from '@/components/ui'
 
 export default function BoardPage({ params }) {
   const { user, loading, signOut } = useAuth()
   const router = useRouter()
-  const { id } = params
+  const { id } = use(params) 
 
   useEffect(() => {
     if (!loading && !user) {

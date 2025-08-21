@@ -14,7 +14,16 @@ export async function middleware(request) {
     {
       cookies: {
         get(name) {
-          return request.cookies.get(name)?.value
+          const value = request.cookies.get(name)?.value
+          
+          if (!value && name.startsWith('sb-') && name.includes('auth-token')) {
+            const customValue = request.cookies.get('sb-auth-token')?.value
+            if (customValue) {
+              return customValue
+            }
+          }
+          
+          return value
         },
         set(name, value, options) {
           request.cookies.set({
@@ -54,6 +63,29 @@ export async function middleware(request) {
     }
   )
 
+  if (request.nextUrl.searchParams.has('code')) {
+    const code = request.nextUrl.searchParams.get('code')
+    
+    const { data: { session }, error } = await supabase.auth.exchangeCodeForSession(code)
+    
+    if (error) {
+      return NextResponse.redirect(new URL('/auth/login', request.url))
+    }
+    
+    if (session) {
+      const url = new URL('/boards', request.url)
+      return NextResponse.redirect(url)
+    }
+  }
+
+  if (request.nextUrl.pathname.startsWith('/api/')) {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+    
+    return response
+  }
+  
   const {
     data: { user },
   } = await supabase.auth.getUser()
@@ -66,5 +98,5 @@ export async function middleware(request) {
 }
 
 export const config = {
-  matcher: ['/boards/:path*']
+  matcher: ['/', '/boards/:path*', '/api/boards/:path*']
 }
