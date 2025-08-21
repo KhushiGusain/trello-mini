@@ -52,7 +52,7 @@ export function AuthProvider({ children }) {
         setUser(session?.user ?? null)
         setLoading(false)
         
-        if (event === 'SIGNED_IN' && session) {
+        if (event === 'SIGNED_IN' && session && !window.location.pathname.startsWith('/boards')) {
           router.push('/boards')
         }
         

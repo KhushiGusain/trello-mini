@@ -73,8 +73,12 @@ export async function middleware(request) {
     }
     
     if (session) {
-      const url = new URL('/boards', request.url)
-      return NextResponse.redirect(url)
+      // Redirect to boards page only if not already on a board page
+      if (!request.nextUrl.pathname.startsWith('/boards/')) {
+        const url = new URL('/boards', request.url)
+        return NextResponse.redirect(url)
+      }
+      return response
     }
   }
 

@@ -9,14 +9,12 @@ export async function DELETE(request, { params }) {
   try {
     const cookieStore = await cookies()
     
-    // Check if we have our custom auth token
     const customToken = cookieStore.get('sb-auth-token')?.value
     if (!customToken) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
     
     try {
-      // Decode the JWT token to get user information
       const tokenParts = customToken.split('.')
       if (tokenParts.length !== 3) {
         return NextResponse.json({ error: 'Invalid token format' }, { status: 401 })
@@ -24,18 +22,16 @@ export async function DELETE(request, { params }) {
       
       const payload = JSON.parse(Buffer.from(tokenParts[1], 'base64').toString())
       
-      // Check if token is expired
       const now = Math.floor(Date.now() / 1000)
       if (payload.exp && payload.exp < now) {
         return NextResponse.json({ error: 'Token expired' }, { status: 401 })
       }
       
       const userId = payload.sub
-      const { id } = params // params is already available in API routes
+      const { id } = params
       
       console.log('Delete API: Deleting board for user:', userId, 'Board ID:', id)
       
-      // Create Supabase client for database operations
       const supabase = createServerClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL,
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
@@ -54,7 +50,6 @@ export async function DELETE(request, { params }) {
         }
       )
       
-      // Check if user is the owner of the board
       const { data: board, error: boardError } = await supabase
         .from('boards')
         .select('created_by')
@@ -70,7 +65,6 @@ export async function DELETE(request, { params }) {
         return NextResponse.json({ error: 'Forbidden - only board owner can delete' }, { status: 403 })
       }
 
-      // Delete the board (cascade will handle related records)
       const { error: deleteError } = await supabase
         .from('boards')
         .delete()
