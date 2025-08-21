@@ -1,4 +1,4 @@
-# MiniTrello
+# trello-mini
 
 A modern, lightweight Trello clone built with Next.js for efficient task and project management.
 
