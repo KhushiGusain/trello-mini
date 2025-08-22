@@ -2,7 +2,7 @@
 
 import { useAuth } from '@/contexts/AuthContext'
 import { useRouter } from 'next/navigation'
-import { useEffect, use, useState } from 'react'
+import { useEffect, use, useState, useRef } from 'react'
 import { Button } from '@/components/ui'
 import KanbanBoard from '@/components/boards/KanbanBoard'
 import ActivitySidebar from '@/components/boards/ActivitySidebar'
@@ -14,6 +14,15 @@ export default function BoardPage({ params }) {
   const { id } = use(params)
   const [isActivitySidebarCollapsed, setIsActivitySidebarCollapsed] = useState(false)
   const [boardMembers, setBoardMembers] = useState([])
+  const [isEditingTitle, setIsEditingTitle] = useState(false)
+  const [titleValue, setTitleValue] = useState('')
+  const [searchQuery, setSearchQuery] = useState('')
+  const [selectedLabel, setSelectedLabel] = useState('')
+  const [selectedMember, setSelectedMember] = useState('')
+  const [selectedDueDate, setSelectedDueDate] = useState('')
+  const [searchResults, setSearchResults] = useState([])
+  const [showSearchResults, setShowSearchResults] = useState(false)
+  const searchRef = useRef(null)
   
   const {
     board,
@@ -65,6 +74,19 @@ export default function BoardPage({ params }) {
     }
   }, [board, getBoardMembers])
 
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (searchRef.current && !searchRef.current.contains(event.target)) {
+        setShowSearchResults(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [])
+
   const toggleActivitySidebar = () => {
     setIsActivitySidebarCollapsed(!isActivitySidebarCollapsed)
   }
@@ -78,6 +100,113 @@ export default function BoardPage({ params }) {
       await updateBoard(updates)
     } catch (error) {
       console.error('Error updating board:', error)
+    }
+  }
+
+  const handleTitleEdit = () => {
+    setTitleValue(board?.title || '')
+    setIsEditingTitle(true)
+  }
+
+  const handleTitleSave = async () => {
+    if (titleValue.trim() && titleValue !== board?.title) {
+      try {
+        await updateBoard({ title: titleValue.trim() })
+      } catch (error) {
+        console.error('Error updating board title:', error)
+      }
+    }
+    setIsEditingTitle(false)
+  }
+
+  const handleTitleCancel = () => {
+    setIsEditingTitle(false)
+    setTitleValue('')
+  }
+
+  const handleTitleKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      handleTitleSave()
+    } else if (e.key === 'Escape') {
+      handleTitleCancel()
+    }
+  }
+
+  const handleSearch = (query) => {
+    setSearchQuery(query)
+    if (query.trim()) {
+      const results = []
+      lists.forEach(list => {
+        list.cards.forEach(card => {
+          if (card.title.toLowerCase().includes(query.toLowerCase())) {
+            results.push({ ...card, listTitle: list.title })
+          }
+        })
+      })
+      setSearchResults(results)
+      setShowSearchResults(true)
+    } else {
+      setSearchResults([])
+      setShowSearchResults(false)
+    }
+  }
+
+  const handleSearchResultClick = (card) => {
+    setShowSearchResults(false)
+    setSearchQuery('')
+    const list = lists.find(l => l.id === card.list_id)
+    if (list) {
+      const cardElement = document.querySelector(`[data-card-id="${card.id}"]`)
+      if (cardElement) {
+        cardElement.click()
+      }
+    }
+  }
+
+  const handleFilterChange = (type, value) => {
+    if (type === 'label') setSelectedLabel(value)
+    if (type === 'member') setSelectedMember(value)
+    if (type === 'dueDate') setSelectedDueDate(value)
+  }
+
+  const clearFilters = () => {
+    setSelectedLabel('')
+    setSelectedMember('')
+    setSelectedDueDate('')
+    setSearchQuery('')
+    setSearchResults([])
+    setShowSearchResults(false)
+  }
+
+  const getFilteredLists = () => {
+    if (!selectedLabel && !selectedMember && !selectedDueDate) {
+      return lists
+    }
+
+    return lists.map(list => ({
+      ...list,
+      cards: list.cards.filter(card => {
+        const labelMatch = !selectedLabel || card.labels.some(label => label.id === selectedLabel)
+        const memberMatch = !selectedMember || card.assignees.some(assignee => assignee.id === selectedMember)
+        const dueDateMatch = !selectedDueDate || checkDueDateFilter(card.due_date, selectedDueDate)
+        return labelMatch && memberMatch && dueDateMatch
+      })
+    }))
+  }
+
+  const checkDueDateFilter = (dueDate, filter) => {
+    if (!dueDate) return filter === 'no-due'
+    const today = new Date()
+    const cardDate = new Date(dueDate)
+    const diffTime = cardDate - today
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+
+    switch (filter) {
+      case 'overdue': return diffDays < 0
+      case 'today': return diffDays === 0
+      case 'week': return diffDays >= 0 && diffDays <= 7
+      case 'month': return diffDays >= 0 && diffDays <= 30
+      default: return true
     }
   }
 
@@ -103,8 +232,7 @@ export default function BoardPage({ params }) {
     )
   }
 
-  if (boardError) {
-    return (
+  if (boardError) {    return (
       <div className="min-h-screen flex items-center justify-center bg-[#eff1f1]">
         <div className="text-center">
           <div className="text-red-500 mb-4">
@@ -139,12 +267,26 @@ export default function BoardPage({ params }) {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                     </svg>
                   </button>
-                  <h1 className="text-2xl font-bold text-[#0c2144] hover:underline cursor-pointer group">
-                    {board?.title || 'Loading Board...'}
-                    <svg className="w-5 h-5 ml-2 opacity-0 group-hover:opacity-100 transition-opacity inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                    </svg>
-                  </h1>
+                  {isEditingTitle ? (
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="text"
+                        value={titleValue}
+                        onChange={(e) => setTitleValue(e.target.value)}
+                        onKeyDown={handleTitleKeyDown}
+                        onBlur={handleTitleSave}
+                        className="text-2xl font-bold text-[#0c2144] bg-transparent border-b-2 border-[#3a72ee] focus:outline-none focus:border-[#3a72ee] px-1"
+                        autoFocus
+                      />
+                    </div>
+                  ) : (
+                    <h1 
+                      className="text-2xl font-bold text-[#0c2144] hover:underline cursor-pointer"
+                      onClick={handleTitleEdit}
+                    >
+                      {board?.title || 'Loading Board...'}
+                    </h1>
+                  )}
                   <span className="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-[#e8f0ff] text-[#3a72ee]">
                     {board?.visibility === 'workspace' ? 'Workspace' : 'Private'}
                   </span>
@@ -187,91 +329,122 @@ export default function BoardPage({ params }) {
 
         <div className="flex flex-1 min-h-0 h-full">
           <div className="flex-1 flex flex-col min-w-0 min-h-0">
-            <div className="bg-white border-b border-[#e5e7eb] px-6 py-4">
-              <div className="flex items-center space-x-6">
-                <div className="relative">
-                  <input
-                    type="text"
-                    placeholder="Search cards..."
-                    className="w-64 px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm text-[#0c2144] placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#3a72ee] focus:border-transparent"
-                  />
-                  <svg className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                  </svg>
-                </div>
-                
-                <div className="flex items-center space-x-4">
-                  <div className="relative">
-                    <select className="px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm text-[#0c2144] focus:outline-none focus:ring-2 focus:ring-[#3a72ee] focus:border-transparent cursor-pointer appearance-none pr-8">
-                      <option value="">All Labels</option>
-                      {labels?.map(label => (
-                        <option key={label.id} value={label.id}>{label.name}</option>
-                      ))}
-                    </select>
-                    <svg className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </div>
-                  
-                  <div className="relative">
-                    <select className="px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm text-[#0c2144] focus:outline-none focus:ring-2 focus:ring-[#3a72ee] focus:border-transparent cursor-pointer appearance-none pr-8">
-                      <option value="">All Members</option>
-                      <option value="me">Assigned to me</option>
-                      <option value="unassigned">Unassigned</option>
-                      <option value="khushi">Khushi</option>
-                      <option value="alex">Alex</option>
-                      <option value="maria">Maria</option>
-                      <option value="sam">Sam</option>
-                    </select>
-                    <svg className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </div>
-                  
-                  <div className="relative">
-                    <select className="px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm text-[#0c2144] focus:outline-none focus:ring-2 focus:ring-[#3a72ee] focus:border-transparent cursor-pointer appearance-none pr-8">
-                      <option value="">Due Date</option>
-                      <option value="overdue">Overdue</option>
-                      <option value="today">Due today</option>
-                      <option value="week">Due this week</option>
-                      <option value="month">Due this month</option>
-                      <option value="no-due">No due date</option>
-                    </select>
-                    <svg className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </div>
-                  
-                  <button className="px-2 py-1.5 text-xs text-[#6b7a90] hover:text-[#0c2144] hover:bg-gray-100 rounded transition-colors cursor-pointer">
-                    Clear
-                  </button>
-                </div>
-              </div>
-            </div>
+                         <div className="bg-white border-b border-[#e5e7eb] px-6 py-4">
+               <div className="flex items-center space-x-6">
+                 <div className="relative" ref={searchRef}>
+                   <input
+                     type="text"
+                     placeholder="Search cards..."
+                     value={searchQuery}
+                     onChange={(e) => handleSearch(e.target.value)}
+                     className="w-64 px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm text-[#0c2144] placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#3a72ee] focus:border-transparent"
+                   />
+                   <svg className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                   </svg>
+                   
+                   {showSearchResults && searchResults.length > 0 && (
+                     <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-60 overflow-y-auto">
+                       {searchResults.map((card) => (
+                         <div
+                           key={card.id}
+                           onClick={() => handleSearchResultClick(card)}
+                           className="px-4 py-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0"
+                         >
+                           <div className="font-medium text-[#0c2144]">{card.title}</div>
+                           <div className="text-sm text-[#6b7a90]">in {card.listTitle}</div>
+                         </div>
+                       ))}
+                     </div>
+                   )}
+                 </div>
+                 
+                 <div className="flex items-center space-x-4">
+                   <div className="relative">
+                     <select 
+                       value={selectedLabel}
+                       onChange={(e) => handleFilterChange('label', e.target.value)}
+                       className="px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm text-[#0c2144] focus:outline-none focus:ring-2 focus:ring-[#3a72ee] focus:border-transparent cursor-pointer appearance-none pr-8"
+                     >
+                       <option value="">All Labels</option>
+                       {labels?.map(label => (
+                         <option key={label.id} value={label.id}>{label.name}</option>
+                       ))}
+                     </select>
+                     <svg className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                     </svg>
+                   </div>
+                   
+                   <div className="relative">
+                     <select 
+                       value={selectedMember}
+                       onChange={(e) => handleFilterChange('member', e.target.value)}
+                       className="px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm text-[#0c2144] focus:outline-none focus:ring-2 focus:ring-[#3a72ee] focus:border-transparent cursor-pointer appearance-none pr-8"
+                     >
+                       <option value="">All Members</option>
+                       <option value="me">Assigned to me</option>
+                       <option value="unassigned">Unassigned</option>
+                       {boardMembers?.map(member => (
+                         <option key={member.id} value={member.id}>{member.display_name}</option>
+                       ))}
+                     </select>
+                     <svg className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                     </svg>
+                   </div>
+                   
+                   <div className="relative">
+                     <select 
+                       value={selectedDueDate}
+                       onChange={(e) => handleFilterChange('dueDate', e.target.value)}
+                       className="px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm text-[#0c2144] focus:outline-none focus:ring-2 focus:ring-[#3a72ee] focus:border-transparent cursor-pointer appearance-none pr-8"
+                     >
+                       <option value="">Due Date</option>
+                       <option value="overdue">Overdue</option>
+                       <option value="today">Due today</option>
+                       <option value="week">Due this week</option>
+                       <option value="month">Due this month</option>
+                       <option value="no-due">No due date</option>
+                     </select>
+                     <svg className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                     </svg>
+                   </div>
+                   
+                   <button 
+                     onClick={clearFilters}
+                     className="px-2 py-1.5 text-xs text-[#6b7a90] hover:text-[#0c2144] hover:bg-gray-100 rounded transition-colors cursor-pointer"
+                   >
+                     Clear
+                   </button>
+                 </div>
+               </div>
+             </div>
             
-            <KanbanBoard
-              lists={lists}
-              onListsChange={handleListsChange}
-              onCreateList={createList}
-              onUpdateList={updateList}
-              onDeleteList={deleteList}
-              onCreateCard={createCard}
-              onUpdateCard={updateCard}
-              onDeleteCard={deleteCard}
-              onUpdateCardsOrder={updateCardsOrder}
-              boardId={id}
-              boardLabels={labels}
-              boardMembers={boardMembers}
-              onGetCardComments={getCardComments}
-              onAddCardComment={addCardComment}
-              onGetCardLabels={getCardLabels}
-              onAddCardLabel={addCardLabel}
-              onRemoveCardLabel={removeCardLabel}
-              onGetCardAssignees={getCardAssignees}
-              onAddCardAssignee={addCardAssignee}
-              onRemoveCardAssignee={removeCardAssignee}
-              onRefreshBoardLabels={refreshBoardLabels}
-            />
+                         <KanbanBoard
+               lists={getFilteredLists()}
+               onListsChange={handleListsChange}
+               onCreateList={createList}
+               onUpdateList={updateList}
+               onDeleteList={deleteList}
+               onCreateCard={createCard}
+               onUpdateCard={updateCard}
+               onDeleteCard={deleteCard}
+               onUpdateCardsOrder={updateCardsOrder}
+               boardId={id}
+               boardLabels={labels}
+               boardMembers={boardMembers}
+               onGetCardComments={getCardComments}
+               onAddCardComment={addCardComment}
+               onGetCardLabels={getCardLabels}
+               onAddCardLabel={addCardLabel}
+               onRemoveCardLabel={removeCardLabel}
+               onGetCardAssignees={getCardAssignees}
+               onAddCardAssignee={addCardAssignee}
+               onRemoveCardAssignee={removeCardAssignee}
+               onRefreshBoardLabels={refreshBoardLabels}
+             />
           </div>
           
           <ActivitySidebar 

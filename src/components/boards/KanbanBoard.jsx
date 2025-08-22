@@ -516,6 +516,7 @@ export default function KanbanBoard({
                     
                     <div 
                       className="bg-white rounded-lg shadow-sm border border-gray-100 p-2 hover:shadow-md transition-shadow cursor-pointer group"
+                      data-card-id={card.id}
                       draggable
                       onDragStart={(e) => {
                         e.stopPropagation()
