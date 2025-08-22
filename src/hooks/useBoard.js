@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react'
 
+
 export default function useBoard(boardId) {
   const [board, setBoard] = useState(null)
   const [lists, setLists] = useState([])
@@ -11,6 +12,7 @@ export default function useBoard(boardId) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const abortControllerRef = useRef(null)
+  const eventSourceRef = useRef(null)
 
   const applyOptimisticUpdate = useCallback((updater) => {
     setLists(updater)
@@ -62,6 +64,15 @@ export default function useBoard(boardId) {
       const createdList = await response.json()
       
       applyOptimisticUpdate(prevLists => [...prevLists, createdList])
+      
+      fetch(`/api/boards/${boardId}/events`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          type: 'list_created',
+          list: createdList
+        })
+      }).catch(err => console.error('Broadcast error:', err))
       
       return createdList
     } catch (err) {
@@ -132,13 +143,23 @@ export default function useBoard(boardId) {
 
       const createdCard = await response.json()
       
-      applyOptimisticUpdate(prevLists => 
+            applyOptimisticUpdate(prevLists => 
         prevLists.map(list => 
-          list.id === listId 
-            ? { ...list, cards: [...(list.cards || []), createdCard] }
-            : list
-        )
-      )
+           list.id === listId 
+             ? { ...list, cards: [...(list.cards || []), createdCard] }
+             : list
+         )
+       )
+      
+      fetch(`/api/boards/${boardId}/events`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          type: 'card_created',
+          card: createdCard,
+          listId: listId
+        })
+      }).catch(err => console.error('Broadcast error:', err))
       
       return createdCard
     } catch (err) {
@@ -254,6 +275,15 @@ export default function useBoard(boardId) {
       })
 
       if (!response.ok) throw new Error('Failed to update cards order')
+      
+      fetch(`/api/boards/${boardId}/events`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          type: 'card_moved',
+          newLists: newLists
+        })
+      }).catch(err => console.error('Broadcast error:', err))
     } catch (err) {
       setLists(originalLists)
       console.error('Error updating cards order:', err)
@@ -268,12 +298,10 @@ export default function useBoard(boardId) {
       ?.cards?.find(c => c.id === cardId)
 
     if (!movedCard) {
-      console.error('Card not found for moving:', { fromListId, cardId })
       return
     }
 
     if (movedCard.id.startsWith('temp_') || movedCard.id.startsWith('real_')) {
-      console.log('Skipping move for temporary card:', movedCard.id)
       return
     }
 
@@ -315,10 +343,7 @@ export default function useBoard(boardId) {
             }))
         )
 
-      console.log('Cards to update (filtered):', cardsToUpdate.map(c => ({ id: c.id, title: c.title })))
 
-      console.log('Moving card:', { cardId, fromListId, toListId, newPosition })
-      console.log('Cards to update:', cardsToUpdate.length)
 
       const response = await fetch(`/api/boards/${boardId}/cards`, {
         method: 'PUT',
@@ -330,6 +355,19 @@ export default function useBoard(boardId) {
         const errorData = await response.json()
         throw new Error(`Failed to move card: ${errorData.error || response.statusText}`)
       }
+
+      fetch(`/api/boards/${boardId}/events`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          type: 'card_moved',
+          cardId: cardId,
+          fromListId: fromListId,
+          toListId: toListId,
+          newPosition: newPosition,
+          movedCard: movedCard
+        })
+      }).catch(err => console.error('Broadcast error:', err))
     } catch (err) {
       setLists(originalLists)
       console.error('Error moving card:', err)
@@ -362,13 +400,67 @@ export default function useBoard(boardId) {
   }, [fetchBoard])
 
   useEffect(() => {
-      fetchBoard()
+    fetchBoard()
+    
+    const eventSource = new EventSource(`/api/boards/${boardId}/events`)
+    
+    eventSource.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data)
+        
+        if (data.type === 'card_moved') {
+          if (data.cardId && data.fromListId && data.toListId) {
+            const updatedLists = lists.map(list => {
+              if (list.id === data.fromListId) {
+                return { ...list, cards: list.cards.filter(card => card.id !== data.cardId) }
+              }
+              if (list.id === data.toListId && data.movedCard) {
+                const newCards = [...list.cards]
+                newCards.splice(data.newPosition || 0, 0, data.movedCard)
+                const updatedCards = newCards.map((c, index) => ({
+                  ...c,
+                  position: (index + 1) * 1000
+                }))
+                return { ...list, cards: updatedCards }
+              }
+              return list
+            })
+            setLists(updatedLists)
+          }
+        } else if (data.type === 'card_created' && data.card) {
+          const updatedLists = lists.map(list => {
+            if (list.id === data.listId) {
+              return { ...list, cards: [...list.cards, data.card] }
+            }
+            return list
+          })
+          setLists(updatedLists)
+        } else if (data.type === 'list_created' && data.list) {
+          setLists(prev => [...prev, data.list])
+        } else if (data.type === 'card_moved' && data.newLists) {
+          setLists(data.newLists)
+        }
+      } catch (error) {
+        console.error('Error parsing SSE message:', error)
+      }
+    }
+    
+    eventSource.onerror = (error) => {
+      console.error('SSE connection error:', error)
+      eventSource.close()
+    }
+    
+    eventSourceRef.current = eventSource
+    
     return () => {
       if (abortControllerRef.current) {
         abortControllerRef.current.abort()
       }
+      if (eventSourceRef.current) {
+        eventSourceRef.current.close()
+      }
     }
-  }, [fetchBoard])
+  }, [fetchBoard, boardId])
 
   return {
     board,
@@ -410,7 +502,15 @@ export default function useBoard(boardId) {
           body: JSON.stringify({ content: body }),
         })
         if (!response.ok) throw new Error('Failed to add comment')
-        return await response.json()
+        const comment = await response.json()
+        
+        fetch(`/api/boards/${boardId}/events`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ type: 'card_updated' })
+        }).catch(err => console.error('Broadcast error:', err))
+        
+        return comment
       } catch (err) {
         console.error('Error adding comment:', err)
         throw err
