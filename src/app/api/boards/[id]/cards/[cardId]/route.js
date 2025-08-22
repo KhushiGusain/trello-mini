@@ -106,7 +106,7 @@ export async function PUT(request, { params }) {
       .eq('board_id', boardId)
       .single()
 
-    if (cardError || !card) {
+    if (cardError) {
       return NextResponse.json({ error: 'Card not found' }, { status: 404 })
     }
 
@@ -117,38 +117,38 @@ export async function PUT(request, { params }) {
     if (body.title !== undefined) updateData.title = body.title
     if (body.description !== undefined) updateData.description = body.description
     if (body.due_date !== undefined) updateData.due_date = body.due_date
+    if (body.position !== undefined) updateData.position = body.position
     if (body.list_id !== undefined) updateData.list_id = body.list_id
-
-    console.log('Updating card with data:', updateData)
 
     const { data: updatedCard, error: updateError } = await supabase
       .from('cards')
       .update(updateData)
       .eq('id', cardId)
+      .eq('board_id', boardId)
       .select('*')
       .single()
 
     if (updateError) {
       console.error('Error updating card:', updateError)
-      console.error('Update data that failed:', updateData)
-      console.error('Card ID:', cardId)
-      console.error('Board ID:', boardId)
-      console.error('User ID:', userId)
       return NextResponse.json({ error: 'Failed to update card' }, { status: 500 })
     }
 
-    console.log('Card updated successfully:', updatedCard)
+    const activityType = body.title !== undefined ? 'card.renamed' : 
+                        body.description !== undefined ? 'card.description_updated' :
+                        body.due_date !== undefined ? 'card.due_date_updated' :
+                        body.list_id !== undefined ? 'card.moved' : 'card.updated'
 
     await supabase
       .from('activities')
       .insert({
         board_id: boardId,
         actor_id: userId,
-        type: 'card.updated',
+        type: activityType,
         data: {
           card_id: cardId,
           card_title: updatedCard.title,
-          changes: body
+          list_id: updatedCard.list_id,
+          ...(body.list_id !== undefined && { from_list_id: card.list_id, to_list_id: body.list_id })
         }
       })
 
@@ -185,49 +185,20 @@ export async function DELETE(request, { params }) {
 
     const { data: card, error: cardError } = await supabase
       .from('cards')
-      .select('*')
+      .select('title, list_id')
       .eq('id', cardId)
       .eq('board_id', boardId)
       .single()
 
-    if (cardError || !card) {
+    if (cardError) {
       return NextResponse.json({ error: 'Card not found' }, { status: 404 })
-    }
-
-    const { error: labelsDeleteError } = await supabase
-      .from('card_labels')
-      .delete()
-      .eq('card_id', cardId)
-
-    if (labelsDeleteError) {
-      console.error('Error deleting card labels:', labelsDeleteError)
-      return NextResponse.json({ error: 'Failed to delete card labels' }, { status: 500 })
-    }
-
-    const { error: assigneesDeleteError } = await supabase
-      .from('card_assignees')
-      .delete()
-      .eq('card_id', cardId)
-
-    if (assigneesDeleteError) {
-      console.error('Error deleting card assignees:', assigneesDeleteError)
-      return NextResponse.json({ error: 'Failed to delete card assignees' }, { status: 500 })
-    }
-
-    const { error: commentsDeleteError } = await supabase
-      .from('comments')
-      .delete()
-      .eq('card_id', cardId)
-
-    if (commentsDeleteError) {
-      console.error('Error deleting card comments:', commentsDeleteError)
-      return NextResponse.json({ error: 'Failed to delete card comments' }, { status: 500 })
     }
 
     const { error: deleteError } = await supabase
       .from('cards')
       .delete()
       .eq('id', cardId)
+      .eq('board_id', boardId)
 
     if (deleteError) {
       console.error('Error deleting card:', deleteError)

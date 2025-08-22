@@ -135,50 +135,50 @@ export async function GET(request, { params }) {
     let cardComments = []
 
     if (cardIds.length > 0) {
-      const { data: labelsData, error: labelsError } = await supabase
-        .from('card_labels')
-        .select(`
-          card_id,
-          label:labels(id, name, color_hex)
-        `)
-        .in('card_id', cardIds)
+      const [labelsResult, assigneesResult, commentsResult] = await Promise.all([
+        supabase
+          .from('card_labels')
+          .select(`
+            card_id,
+            label:labels(id, name, color_hex)
+          `)
+          .in('card_id', cardIds),
+        supabase
+          .from('card_assignees')
+          .select(`
+            card_id,
+            user:profiles(id, display_name, avatar_url)
+          `)
+          .in('card_id', cardIds),
+        supabase
+          .from('comments')
+          .select(`
+            id,
+            card_id,
+            body,
+            created_at,
+            author:profiles(display_name, avatar_url)
+          `)
+          .in('card_id', cardIds)
+          .order('created_at', { ascending: true })
+      ])
 
-      if (labelsError) {
-        console.error('Error fetching card labels:', labelsError)
+      if (labelsResult.error) {
+        console.error('Error fetching card labels:', labelsResult.error)
       } else {
-        cardLabels = labelsData
+        cardLabels = labelsResult.data
       }
 
-      const { data: assigneesData, error: assigneesError } = await supabase
-        .from('card_assignees')
-        .select(`
-          card_id,
-          user:profiles(id, display_name, avatar_url)
-        `)
-        .in('card_id', cardIds)
-
-      if (assigneesError) {
-        console.error('Error fetching card assignees:', assigneesError)
+      if (assigneesResult.error) {
+        console.error('Error fetching card assignees:', assigneesResult.error)
       } else {
-        cardAssignees = assigneesData
+        cardAssignees = assigneesResult.data
       }
 
-      const { data: commentsData, error: commentsError } = await supabase
-        .from('comments')
-        .select(`
-          id,
-          card_id,
-          body,
-          created_at,
-          author:profiles(display_name, avatar_url)
-        `)
-        .in('card_id', cardIds)
-        .order('created_at', { ascending: true })
-
-      if (commentsError) {
-        console.error('Error fetching card comments:', commentsError)
+      if (commentsResult.error) {
+        console.error('Error fetching card comments:', commentsResult.error)
       } else {
-        cardComments = commentsData
+        cardComments = commentsResult.data
       }
     }
 
@@ -189,8 +189,6 @@ export async function GET(request, { params }) {
       cards: list.cards
         .filter(card => !card.archived)
         .map(card => {
-          console.log('Processing card:', card.id, 'description:', card.description, 'due_date:', card.due_date)
-          
           const cardLabelsForCard = cardLabels
             .filter(cl => cl.card_id === card.id)
             .map(cl => cl.label)
@@ -300,7 +298,7 @@ export async function PUT(request, { params }) {
       .insert({
         board_id: id,
         actor_id: userId,
-        type: 'list.renamed',
+        type: 'board.renamed',
         data: {
           old_title: board.title,
           new_title: body.title
@@ -338,100 +336,6 @@ export async function DELETE(request, { params }) {
 
     if (board.created_by !== userId) {
       return NextResponse.json({ error: 'Forbidden - only board owner can delete' }, { status: 403 })
-    }
-
-    const { data: cards, error: cardsError } = await supabase
-      .from('cards')
-      .select('id')
-      .eq('board_id', id)
-
-    if (cardsError) {
-      console.error('Error fetching cards for board:', cardsError)
-      return NextResponse.json({ error: 'Failed to fetch cards for board' }, { status: 500 })
-    }
-
-    if (cards && cards.length > 0) {
-      const cardIds = cards.map(card => card.id)
-
-      const { error: commentsDeleteError } = await supabase
-        .from('comments')
-        .delete()
-        .in('card_id', cardIds)
-
-      if (commentsDeleteError) {
-        console.error('Error deleting comments:', commentsDeleteError)
-        return NextResponse.json({ error: 'Failed to delete comments' }, { status: 500 })
-      }
-
-      const { error: assigneesDeleteError } = await supabase
-        .from('card_assignees')
-        .delete()
-        .in('card_id', cardIds)
-
-      if (assigneesDeleteError) {
-        console.error('Error deleting card assignees:', assigneesDeleteError)
-        return NextResponse.json({ error: 'Failed to delete card assignees' }, { status: 500 })
-      }
-
-      const { error: cardLabelsDeleteError } = await supabase
-        .from('card_labels')
-        .delete()
-        .in('card_id', cardIds)
-
-      if (cardLabelsDeleteError) {
-        console.error('Error deleting card labels:', cardLabelsDeleteError)
-        return NextResponse.json({ error: 'Failed to delete card labels' }, { status: 500 })
-      }
-    }
-
-    const { error: cardsDeleteError } = await supabase
-      .from('cards')
-      .delete()
-      .eq('board_id', id)
-
-    if (cardsDeleteError) {
-      console.error('Error deleting cards:', cardsDeleteError)
-      return NextResponse.json({ error: 'Failed to delete cards' }, { status: 500 })
-    }
-
-    const { error: listsDeleteError } = await supabase
-      .from('lists')
-      .delete()
-      .eq('board_id', id)
-
-    if (listsDeleteError) {
-      console.error('Error deleting lists:', listsDeleteError)
-      return NextResponse.json({ error: 'Failed to delete lists' }, { status: 500 })
-    }
-
-    const { error: labelsDeleteError } = await supabase
-      .from('labels')
-      .delete()
-      .eq('board_id', id)
-
-    if (labelsDeleteError) {
-      console.error('Error deleting labels:', labelsDeleteError)
-      return NextResponse.json({ error: 'Failed to delete labels' }, { status: 500 })
-    }
-
-    const { error: membersDeleteError } = await supabase
-      .from('board_members')
-      .delete()
-      .eq('board_id', id)
-
-    if (membersDeleteError) {
-      console.error('Error deleting board members:', membersDeleteError)
-      return NextResponse.json({ error: 'Failed to delete board members' }, { status: 500 })
-    }
-
-    const { error: activitiesDeleteError } = await supabase
-      .from('activities')
-      .delete()
-      .eq('board_id', id)
-
-    if (activitiesDeleteError) {
-      console.error('Error deleting activities:', activitiesDeleteError)
-      return NextResponse.json({ error: 'Failed to delete activities' }, { status: 500 })
     }
 
     const { error: deleteError } = await supabase

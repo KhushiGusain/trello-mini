@@ -2,11 +2,11 @@
 
 import { useAuth } from '@/contexts/AuthContext'
 import { useRouter } from 'next/navigation'
-import { useEffect, use, useState, useRef } from 'react'
+import { useEffect, use, useState, useRef, useCallback } from 'react'
 import { Button } from '@/components/ui'
 import KanbanBoard from '@/components/boards/KanbanBoard'
 import ActivitySidebar from '@/components/boards/ActivitySidebar'
-import { useBoard } from '@/hooks/useBoard'
+import useBoard from '@/hooks/useBoard'
 
 export default function BoardPage({ params }) {
   const { user, loading, signOut } = useAuth()
@@ -17,7 +17,6 @@ export default function BoardPage({ params }) {
   const [isEditingTitle, setIsEditingTitle] = useState(false)
   const [titleValue, setTitleValue] = useState('')
   const [searchQuery, setSearchQuery] = useState('')
-  const [selectedLabel, setSelectedLabel] = useState('')
   const [selectedMember, setSelectedMember] = useState('')
   const [selectedDueDate, setSelectedDueDate] = useState('')
   const [searchResults, setSearchResults] = useState([])
@@ -43,7 +42,9 @@ export default function BoardPage({ params }) {
     deleteCard,
     updateListsOrder,
     updateCardsOrder,
+    moveCard,
     updateBoard,
+    addBoardLabel,
     getCardComments,
     addCardComment,
     getCardLabels,
@@ -53,7 +54,7 @@ export default function BoardPage({ params }) {
     addCardAssignee,
     removeCardAssignee,
     getBoardMembers,
-    refreshBoardLabels,
+    onCardUpdate
   } = useBoard(id)
 
   useEffect(() => {
@@ -62,19 +63,20 @@ export default function BoardPage({ params }) {
     }
   }, [user, loading, router])
 
-  useEffect(() => {
-    if (board && getBoardMembers) {
-      const fetchMembers = async () => {
-        try {
-          const members = await getBoardMembers()
-          setBoardMembers(members)
-        } catch (error) {
-          console.error('Error fetching board members:', error)
-        }
-      }
-      fetchMembers()
+  const refreshFilterData = useCallback(async () => {
+    try {
+      const members = await getBoardMembers()
+      setBoardMembers(members)
+    } catch (error) {
+      console.error('Error refreshing filter data:', error)
     }
-  }, [board, getBoardMembers])
+  }, [getBoardMembers])
+
+  useEffect(() => {
+    if (board) {
+      refreshFilterData()
+    }
+  }, [board])
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -174,13 +176,11 @@ export default function BoardPage({ params }) {
   }
 
   const handleFilterChange = (type, value) => {
-    if (type === 'label') setSelectedLabel(value)
     if (type === 'member') setSelectedMember(value)
     if (type === 'dueDate') setSelectedDueDate(value)
   }
 
   const clearFilters = () => {
-    setSelectedLabel('')
     setSelectedMember('')
     setSelectedDueDate('')
     setSearchQuery('')
@@ -188,18 +188,19 @@ export default function BoardPage({ params }) {
     setShowSearchResults(false)
   }
 
+
+
   const getFilteredLists = () => {
-    if (!selectedLabel && !selectedMember && !selectedDueDate) {
+    if (!selectedMember && !selectedDueDate) {
       return lists
     }
 
     return lists.map(list => ({
       ...list,
       cards: list.cards.filter(card => {
-        const labelMatch = !selectedLabel || card.labels.some(label => label.id === selectedLabel)
         const memberMatch = !selectedMember || card.assignees.some(assignee => assignee.id === selectedMember)
         const dueDateMatch = !selectedDueDate || checkDueDateFilter(card.due_date, selectedDueDate)
-        return labelMatch && memberMatch && dueDateMatch
+        return memberMatch && dueDateMatch
       })
     }))
   }
@@ -385,25 +386,14 @@ export default function BoardPage({ params }) {
                                  : 'hover:bg-gray-50'
                              }`}
                            >
-                             <div className="font-medium text-[#0c2144] mb-1">{card.title}</div>
                              <div className="flex items-center justify-between">
-                               <div className="text-sm text-[#6b7a90]">in {card.listTitle}</div>
-                               <div className="flex items-center space-x-2">
-                                 {card.labels && card.labels.length > 0 && (
-                                   <div className="flex space-x-1">
-                                     {card.labels.slice(0, 2).map((label) => (
-                                       <div
-                                         key={label.id}
-                                         className="w-3 h-3 rounded-full"
-                                         style={{ backgroundColor: label.color }}
-                                         title={label.name}
-                                       />
-                                     ))}
-                                     {card.labels.length > 2 && (
-                                       <span className="text-xs text-[#6b7a90]">+{card.labels.length - 2}</span>
-                                     )}
-                                   </div>
-                                 )}
+                               <div className="flex-1 min-w-0">
+                                 <div className="text-sm font-medium text-[#0c2144] truncate">
+                                   {card.title}
+                                 </div>
+                                 <div className="text-sm text-[#6b7a90]">in {card.listTitle}</div>
+                               </div>
+                               <div className="flex items-center space-x-2 ml-3">
                                  {card.assignees && card.assignees.length > 0 && (
                                    <div className="flex -space-x-1">
                                      {card.assignees.slice(0, 3).map((assignee) => (
@@ -442,22 +432,6 @@ export default function BoardPage({ params }) {
                 </div>
                 
                 <div className="flex items-center space-x-4">
-                  <div className="relative">
-                     <select 
-                       value={selectedLabel}
-                       onChange={(e) => handleFilterChange('label', e.target.value)}
-                       className="px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm text-[#0c2144] focus:outline-none focus:ring-2 focus:ring-[#3a72ee] focus:border-transparent cursor-pointer appearance-none pr-8"
-                     >
-                      <option value="">All Labels</option>
-                       {labels?.map(label => (
-                         <option key={label.id} value={label.id}>{label.name}</option>
-                       ))}
-                    </select>
-                    <svg className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </div>
-                  
                   <div className="relative">
                      <select 
                        value={selectedMember}
@@ -513,7 +487,9 @@ export default function BoardPage({ params }) {
                onCreateCard={createCard}
                onUpdateCard={updateCard}
                onDeleteCard={deleteCard}
+               onUpdateListsOrder={updateListsOrder}
                onUpdateCardsOrder={updateCardsOrder}
+               onMoveCard={moveCard}
                boardId={id}
                boardLabels={labels}
                boardMembers={boardMembers}
@@ -525,7 +501,7 @@ export default function BoardPage({ params }) {
                onGetCardAssignees={getCardAssignees}
                onAddCardAssignee={addCardAssignee}
                onRemoveCardAssignee={removeCardAssignee}
-               onRefreshBoardLabels={refreshBoardLabels}
+               onAddBoardLabel={addBoardLabel}
                cardToOpen={cardToOpen}
                         />
                       </div>

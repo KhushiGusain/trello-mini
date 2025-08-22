@@ -14,7 +14,9 @@ export default function KanbanBoard({
   onCreateCard,
   onUpdateCard,
   onDeleteCard,
+  onUpdateListsOrder,
   onUpdateCardsOrder,
+  onMoveCard,
   boardId,
   boardLabels = [],
   boardMembers = [],
@@ -26,11 +28,10 @@ export default function KanbanBoard({
   onGetCardAssignees,
   onAddCardAssignee,
   onRemoveCardAssignee,
-  onRefreshBoardLabels,
+  onAddBoardLabel,
   cardToOpen
 }) {
   const [editingListId, setEditingListId] = useState(null)
-  const [editingCardId, setEditingCardId] = useState(null)
   const [editingText, setEditingText] = useState('')
   const [showAddList, setShowAddList] = useState(false)
   const [newListTitle, setNewListTitle] = useState('')
@@ -68,10 +69,10 @@ export default function KanbanBoard({
     setEditingText('')
   }
 
-  const createList = async () => {
-    if (newListTitle.trim()) {
+  const createList = async (title) => {
+    if (title && title.trim()) {
       try {
-        await onCreateList(newListTitle.trim())
+        await onCreateList(title.trim())
         setNewListTitle('')
         setShowAddList(false)
       } catch (error) {
@@ -105,29 +106,7 @@ export default function KanbanBoard({
     }
   }
 
-  const startEditCard = (cardId, currentTitle) => {
-    setEditingCardId(cardId)
-    setEditingText(currentTitle)
-  }
 
-  const saveCardTitle = (cardId) => {
-    if (editingText.trim()) {
-      const updatedLists = lists.map(list => ({
-        ...list,
-        cards: list.cards.map(card => 
-          card.id === cardId ? { ...card, title: editingText.trim() } : card
-        )
-      }))
-      onListsChange(updatedLists)
-    }
-    setEditingCardId(null)
-    setEditingText('')
-  }
-
-  const cancelEditCard = () => {
-    setEditingCardId(null)
-    setEditingText('')
-  }
 
   const createCard = async (listId, title) => {
     if (title.trim()) {
@@ -148,72 +127,8 @@ export default function KanbanBoard({
   }
 
   const moveCard = async (fromListId, toListId, cardId, newPosition) => {
-    console.log('Moving card:', cardId, 'from list:', fromListId, 'to list:', toListId, 'at position:', newPosition)
-    
-    const newLists = [...lists]
-    
-    const fromList = newLists.find(l => l.id === fromListId)
-    const toList = newLists.find(l => l.id === toListId)
-    
-    if (!fromList || !toList) {
-      console.error('Source or target list not found')
-      return
-    }
-    
-    const card = fromList.cards.find(c => c.id === cardId)
-    if (!card) {
-      console.error('Card not found in source list')
-      return
-    }
-    
-    const updatedFromList = {
-      ...fromList,
-      cards: fromList.cards.filter(c => c.id !== cardId)
-    }
-    
-    const targetCards = [...toList.cards]
-    const movedCard = { ...card, list_id: toListId }
-    
-    if (newPosition === 0) {
-      targetCards.unshift(movedCard)
-    } else if (newPosition >= targetCards.length) {
-      targetCards.push(movedCard)
-    } else {
-      targetCards.splice(newPosition, 0, movedCard)
-    }
-    
-    const updatedTargetCards = targetCards.map((c, index) => ({
-      ...c,
-      position: (index + 1) * 1000,
-      list_id: toListId
-    }))
-    
-    const updatedToList = {
-      ...toList,
-      cards: updatedTargetCards
-    }
-    
-    const updatedSourceCards = updatedFromList.cards.map((c, index) => ({
-      ...c,
-      position: (index + 1) * 1000,
-      list_id: fromListId
-    }))
-    
-    const finalFromList = {
-      ...updatedFromList,
-      cards: updatedSourceCards
-    }
-    
-    const finalLists = newLists.map(list => {
-      if (list.id === fromListId) return finalFromList
-      if (list.id === toListId) return updatedToList
-      return list
-    })
-    
-    console.log('Final lists for update:', finalLists)
-    
     try {
-      await onUpdateCardsOrder(finalLists)
+      await onMoveCard(fromListId, toListId, cardId, newPosition)
     } catch (error) {
       console.error('Error moving card:', error)
     }
@@ -391,13 +306,58 @@ export default function KanbanBoard({
   const updateCardData = (cardId, updates) => {
     const updatedLists = lists.map(list => ({
       ...list,
-      cards: list.cards.map(card => 
-        card.id === cardId ? { ...card, ...updates } : card
-      )
+      cards: list.cards.map(card => {
+        if (card.id === cardId) {
+          const updatedCard = { ...card }
+          
+          if (updates.labels) {
+            updatedCard.labels = updates.labels
+          }
+          if (updates.comments) {
+            updatedCard.comments = updates.comments
+          }
+          if (updates.assignees) {
+            updatedCard.assignees = updates.assignees
+          }
+          if (updates.description !== undefined) {
+            updatedCard.description = updates.description
+          }
+          if (updates.title !== undefined) {
+            updatedCard.title = updates.title
+          }
+          if (updates.due_date !== undefined) {
+            updatedCard.due_date = updates.due_date
+          }
+          
+          return updatedCard
+        }
+        return card
+      })
     }))
     
     if (selectedCard && selectedCard.id === cardId) {
-      setSelectedCard({ ...selectedCard, ...updates })
+      const updatedSelectedCard = { ...selectedCard }
+      
+      if (updates.labels) {
+        updatedSelectedCard.labels = updates.labels
+      }
+      if (updates.comments) {
+        updatedSelectedCard.comments = updates.comments
+      }
+      if (updates.assignees) {
+        updatedSelectedCard.assignees = updates.assignees
+      }
+      if (updates.description !== undefined) {
+        updatedSelectedCard.description = updates.description
+      }
+      if (updates.title !== undefined) {
+        updatedSelectedCard.title = updates.title
+      }
+      if (updates.due_date !== undefined) {
+        updatedSelectedCard.due_date = updates.due_date
+      }
+      
+      setSelectedCard(updatedSelectedCard)
     }
     
     onListsChange(updatedLists)
@@ -450,10 +410,6 @@ export default function KanbanBoard({
             onDragEnd={handleDragEnd}
             onCreateCard={createCard}
             onOpenCardModal={openCardModal}
-            editingCardId={editingCardId}
-            onStartEditCard={startEditCard}
-            onSaveCardTitle={saveCardTitle}
-            onCancelEditCard={cancelEditCard}
             onDeleteCard={deleteCard}
           />
         ))}
@@ -484,7 +440,7 @@ export default function KanbanBoard({
         getCardAssignees={onGetCardAssignees}
         addCardAssignee={onAddCardAssignee}
         removeCardAssignee={onRemoveCardAssignee}
-        onRefreshBoardLabels={onRefreshBoardLabels}
+        onAddBoardLabel={onAddBoardLabel}
         onCardUpdate={updateCardData}
       />
     </div>

@@ -7,7 +7,8 @@ export default function DescriptionSection({
   onSaveDescription,
   onStartEditDescription,
   onCancelEditDescription,
-  originalDescription
+  originalDescription,
+  isSavingDescription
 }) {
   return (
     <div className="space-y-3">
@@ -31,16 +32,26 @@ export default function DescriptionSection({
           <div className="flex items-center space-x-2">
             <button
               onClick={onSaveDescription}
-              className="px-4 py-2 bg-blue-500 text-white text-sm font-medium rounded-lg hover:bg-blue-600 transition-colors cursor-pointer"
+              disabled={isSavingDescription}
+              className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors cursor-pointer ${
+                isSavingDescription
+                  ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                  : 'bg-blue-500 text-white hover:bg-blue-600'
+              }`}
             >
-              Save
+              {isSavingDescription ? 'Saving...' : 'Save'}
             </button>
             <button
               onClick={() => {
                 onCancelEditDescription()
                 onDescriptionChange(originalDescription || '')
               }}
-              className="px-4 py-2 text-gray-500 hover:text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-100 transition-colors cursor-pointer"
+              disabled={isSavingDescription}
+              className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors cursor-pointer ${
+                isSavingDescription
+                  ? 'text-gray-400 cursor-not-allowed'
+                  : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
+              }`}
             >
               Cancel
             </button>

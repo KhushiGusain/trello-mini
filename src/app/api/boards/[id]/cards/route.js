@@ -202,6 +202,21 @@ export async function PUT(request, { params }) {
       return NextResponse.json({ error: 'Invalid card data - missing list_id or id' }, { status: 400 })
     }
 
+    const cardIds = body.cards.map(card => card.id)
+    
+    const { data: existingCards, error: fetchError } = await supabase
+      .from('cards')
+      .select('id, created_by')
+      .in('id', cardIds)
+      .eq('board_id', boardId)
+
+    if (fetchError) {
+      console.error('Error fetching existing cards:', fetchError)
+      return NextResponse.json({ error: 'Failed to fetch existing cards' }, { status: 500 })
+    }
+
+    const existingCardMap = new Map(existingCards.map(card => [card.id, card]))
+
     const { error: updateError } = await supabase
       .from('cards')
       .upsert(body.cards.map((card, index) => ({
@@ -213,10 +228,12 @@ export async function PUT(request, { params }) {
         position: card.position || (index + 1) * 1000,
         due_date: card.due_date,
         archived: card.archived || false,
-        created_by: card.created_by,
-        created_at: card.created_at,
+        created_by: existingCardMap.get(card.id)?.created_by,
         updated_at: new Date().toISOString()
-      })))
+      })), {
+        onConflict: 'id',
+        ignoreDuplicates: false
+      })
 
     if (updateError) {
       console.error('Error updating cards:', updateError)

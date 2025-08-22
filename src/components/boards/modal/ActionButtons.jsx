@@ -26,6 +26,13 @@ export default function ActionButtons({
   labelsDropdownRef,
   membersDropdownRef
 }) {
+  const handleDateSelect = (selectedDate) => {
+    if (selectedDate) {
+      onSaveDueDate(selectedDate)
+      onToggleDropdown(null)
+    }
+  }
+
   return (
     <div className="flex items-center space-x-2">
       <div className="relative">
@@ -74,12 +81,7 @@ export default function ActionButtons({
                 id="due-date-input"
                 type="date"
                 value={dueDate ? dueDate.split('T')[0] : ''}
-                onChange={(e) => {
-                  const selectedDate = e.target.value
-                  if (selectedDate) {
-                    onSaveDueDate(selectedDate)
-                  }
-                }}
+                onChange={(e) => handleDateSelect(e.target.value)}
                 onClick={(e) => e.stopPropagation()}
                 className="w-full mt-2 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
                 min={new Date().toISOString().split('T')[0]}

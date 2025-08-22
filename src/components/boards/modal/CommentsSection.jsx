@@ -5,7 +5,8 @@ export default function CommentsSection({
   onCommentTextChange,
   onAddComment,
   comments,
-  formatTimeAgo
+  formatTimeAgo,
+  isAddingComment
 }) {
   return (
     <div className="w-80 border-l border-gray-200 p-6 overflow-y-auto">
@@ -24,13 +25,18 @@ export default function CommentsSection({
             placeholder="Write a comment..."
             className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
             rows="2"
+            disabled={isAddingComment}
           />
           <button
             onClick={onAddComment}
-            disabled={!commentText.trim()}
-            className="px-4 py-2 bg-blue-500 text-white text-sm font-medium rounded-lg hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+            disabled={!commentText.trim() || isAddingComment}
+            className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors cursor-pointer ${
+              commentText.trim() && !isAddingComment
+                ? 'bg-blue-500 text-white hover:bg-blue-600'
+                : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+            }`}
           >
-            Save
+            {isAddingComment ? 'Adding...' : 'Save'}
           </button>
         </div>
 

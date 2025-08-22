@@ -5,9 +5,9 @@ export default function ModalHeader({ listTitle, onClose }) {
     <div className="flex items-center justify-between p-6 border-b border-gray-200">
       <div className="flex items-center space-x-4">
         <div className="flex items-center space-x-2">
-          <button className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-medium text-gray-700 flex items-center space-x-1 transition-colors">
-            <span>{listTitle}</span>
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <button className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-medium text-gray-700 flex items-center space-x-1 transition-colors max-w-48">
+            <span className="truncate">{listTitle}</span>
+            <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
             </svg>
           </button>

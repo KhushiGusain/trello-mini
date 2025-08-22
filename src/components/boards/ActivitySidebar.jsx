@@ -7,43 +7,43 @@ function getActivityText(activity) {
     case 'card.created':
       return (
         <>
-          added <span className="text-[#3a72ee] font-medium">"{activity.data.card_title}"</span> to <span className="text-[#3a72ee] font-medium">"{activity.data.list_title || 'Unknown List'}"</span>
+          added <span className="text-[#3a72ee] font-medium break-words">"{activity.data.card_title}"</span> to <span className="text-[#3a72ee] font-medium break-words">"{activity.data.list_title || 'Unknown List'}"</span>
         </>
       )
     case 'card.updated':
       return (
         <>
-          updated <span className="text-[#3a72ee] font-medium">"{activity.data.card_title}"</span>
+          updated <span className="text-[#3a72ee] font-medium break-words">"{activity.data.card_title}"</span>
         </>
       )
     case 'card.moved':
       return (
         <>
-          moved <span className="text-[#3a72ee] font-medium">"{activity.data.card_title}"</span> to <span className="text-[#3a72ee] font-medium">"{activity.data.to_list_title || 'Unknown List'}"</span>
+          moved <span className="text-[#3a72ee] font-medium break-words">"{activity.data.card_title}"</span> to <span className="text-[#3a72ee] font-medium break-words">"{activity.data.to_list_title || 'Unknown List'}"</span>
         </>
       )
     case 'card.deleted':
       return (
         <>
-          deleted <span className="text-[#3a72ee] font-medium">"{activity.data.card_title}"</span>
+          deleted <span className="text-[#3a72ee] font-medium break-words">"{activity.data.card_title}"</span>
         </>
       )
     case 'list.created':
       return (
         <>
-          created <span className="text-[#3a72ee] font-medium">"{activity.data.list_title}"</span> list
+          created <span className="text-[#3a72ee] font-medium break-words">"{activity.data.list_title}"</span> list
         </>
       )
     case 'list.renamed':
       return (
         <>
-          renamed list from <span className="text-[#3a72ee] font-medium">"{activity.data.old_title}"</span> to <span className="text-[#3a72ee] font-medium">"{activity.data.new_title}"</span>
+          renamed list from <span className="text-[#3a72ee] font-medium break-words">"{activity.data.old_title || 'Untitled'}"</span> to <span className="text-[#3a72ee] font-medium break-words">"{activity.data.new_title || 'Untitled'}"</span>
         </>
       )
     case 'list.deleted':
       return (
         <>
-          deleted <span className="text-[#3a72ee] font-medium">"{activity.data.list_title}"</span> list
+          deleted <span className="text-[#3a72ee] font-medium break-words">"{activity.data.list_title}"</span> list
         </>
       )
     default:
@@ -117,7 +117,7 @@ export default function ActivitySidebar({ isCollapsed, onToggleCollapse, activit
           </button>
         </div>
         
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        <div className="flex-1 overflow-y-auto overflow-x-hidden p-4">
           <div className="space-y-4">
             {activities.length === 0 ? (
               <div className="text-center py-8">
@@ -131,8 +131,8 @@ export default function ActivitySidebar({ isCollapsed, onToggleCollapse, activit
                       {activity.actor?.display_name?.charAt(0)?.toUpperCase() || 'U'}
                     </span>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm text-[#0c2144]">
+                  <div className="flex-1 min-w-0 overflow-hidden">
+                    <p className="text-sm text-[#0c2144] break-words leading-relaxed">
                       <span className="font-medium">{activity.actor?.display_name || 'Unknown'}</span>{' '}
                       {getActivityText(activity)}
                     </p>

@@ -81,6 +81,40 @@ async function checkBoardAccess(boardId, userId) {
   return { board, boardMember }
 }
 
+export async function GET(request, { params }) {
+  try {
+    const userId = await getCurrentUser()
+    const { id: boardId } = await params
+    
+    const supabase = await getSupabaseClient()
+    
+    await checkBoardAccess(boardId, userId)
+    
+    const { data: labels, error: labelsError } = await supabase
+      .from('labels')
+      .select('*')
+      .eq('board_id', boardId)
+      .order('name', { ascending: true })
+
+    if (labelsError) {
+      console.error('Error fetching labels:', labelsError)
+      return NextResponse.json({ error: 'Failed to fetch labels' }, { status: 500 })
+    }
+
+    return NextResponse.json(labels)
+    
+  } catch (error) {
+    console.error('Error in GET /api/boards/[id]/labels:', error)
+    if (error.message === 'Unauthorized' || error.message === 'Invalid token' || error.message === 'Token expired') {
+      return NextResponse.json({ error: error.message }, { status: 401 })
+    }
+    if (error.message === 'Board not found' || error.message === 'Access denied') {
+      return NextResponse.json({ error: error.message }, { status: 403 })
+    }
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
+}
+
 export async function POST(request, { params }) {
   try {
     const userId = await getCurrentUser()
@@ -107,7 +141,6 @@ export async function POST(request, { params }) {
       .from('labels')
       .select('*')
       .eq('board_id', boardId)
-      .eq('color_hex', body.color)
       .eq('name', body.name)
       .single()
 

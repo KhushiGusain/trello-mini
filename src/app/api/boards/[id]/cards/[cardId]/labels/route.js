@@ -157,6 +157,17 @@ export async function POST(request, { params }) {
       return NextResponse.json({ error: 'Label not found' }, { status: 404 })
     }
 
+    const { data: existingCardLabel } = await supabase
+      .from('card_labels')
+      .select('*')
+      .eq('card_id', cardId)
+      .eq('label_id', body.label_id)
+      .single()
+
+    if (existingCardLabel) {
+      return NextResponse.json(label)
+    }
+
     const { data: newCardLabel, error: createError } = await supabase
       .from('card_labels')
       .insert({

@@ -79,7 +79,7 @@ export default function LabelsDropdown({
                 : 'bg-gray-200 text-gray-400 cursor-not-allowed'
             }`}
           >
-            {isCreatingLabel ? 'Saving...' : 'Save'}
+            {isCreatingLabel ? 'Creating...' : 'Save'}
           </button>
           <button
             onClick={onCancel}

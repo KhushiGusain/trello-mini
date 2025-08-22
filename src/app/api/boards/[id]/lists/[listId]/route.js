@@ -99,17 +99,6 @@ export async function PUT(request, { params }) {
       return NextResponse.json({ error: 'Forbidden - insufficient permissions' }, { status: 403 })
     }
 
-    const { data: list, error: listError } = await supabase
-      .from('lists')
-      .select('*')
-      .eq('id', listId)
-      .eq('board_id', boardId)
-      .single()
-
-    if (listError || !list) {
-      return NextResponse.json({ error: 'List not found' }, { status: 404 })
-    }
-
     const { data: updatedList, error: updateError } = await supabase
       .from('lists')
       .update({
@@ -117,6 +106,7 @@ export async function PUT(request, { params }) {
         updated_at: new Date().toISOString()
       })
       .eq('id', listId)
+      .eq('board_id', boardId)
       .select('*')
       .single()
 
@@ -133,8 +123,7 @@ export async function PUT(request, { params }) {
         type: 'list.renamed',
         data: {
           list_id: listId,
-          old_title: list.title,
-          new_title: body.title
+          list_title: body.title
         }
       })
 
@@ -171,73 +160,20 @@ export async function DELETE(request, { params }) {
 
     const { data: list, error: listError } = await supabase
       .from('lists')
-      .select('*')
+      .select('title')
       .eq('id', listId)
       .eq('board_id', boardId)
       .single()
 
-    if (listError || !list) {
+    if (listError) {
       return NextResponse.json({ error: 'List not found' }, { status: 404 })
-    }
-
-    const { data: cards, error: cardsError } = await supabase
-      .from('cards')
-      .select('id')
-      .eq('list_id', listId)
-
-    if (cardsError) {
-      console.error('Error fetching cards for list:', cardsError)
-      return NextResponse.json({ error: 'Failed to fetch cards for list' }, { status: 500 })
-    }
-
-    if (cards && cards.length > 0) {
-      const cardIds = cards.map(card => card.id)
-
-      const { error: labelsDeleteError } = await supabase
-        .from('card_labels')
-        .delete()
-        .in('card_id', cardIds)
-
-      if (labelsDeleteError) {
-        console.error('Error deleting card labels:', labelsDeleteError)
-        return NextResponse.json({ error: 'Failed to delete card labels' }, { status: 500 })
-      }
-
-      const { error: assigneesDeleteError } = await supabase
-        .from('card_assignees')
-        .delete()
-        .in('card_id', cardIds)
-
-      if (assigneesDeleteError) {
-        console.error('Error deleting card assignees:', assigneesDeleteError)
-        return NextResponse.json({ error: 'Failed to delete card assignees' }, { status: 500 })
-      }
-
-      const { error: commentsDeleteError } = await supabase
-        .from('comments')
-        .delete()
-        .in('card_id', cardIds)
-
-      if (commentsDeleteError) {
-        console.error('Error deleting comments:', commentsDeleteError)
-        return NextResponse.json({ error: 'Failed to delete comments' }, { status: 500 })
-      }
-
-      const { error: cardsDeleteError } = await supabase
-        .from('cards')
-        .delete()
-        .eq('list_id', listId)
-
-      if (cardsDeleteError) {
-        console.error('Error deleting cards:', cardsDeleteError)
-        return NextResponse.json({ error: 'Failed to delete cards' }, { status: 500 })
-      }
     }
 
     const { error: deleteError } = await supabase
       .from('lists')
       .delete()
       .eq('id', listId)
+      .eq('board_id', boardId)
 
     if (deleteError) {
       console.error('Error deleting list:', deleteError)

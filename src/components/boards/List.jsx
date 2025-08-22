@@ -21,10 +21,6 @@ export default function List({
   onDragEnd,
   onCreateCard,
   onOpenCardModal,
-  editingCardId,
-  onStartEditCard,
-  onSaveCardTitle,
-  onCancelEditCard,
   onDeleteCard
 }) {
   const isEditing = editingListId === list.id
@@ -76,7 +72,7 @@ export default function List({
               ) : (
                 <div className="flex items-center space-x-2">
                   <h3 
-                    className="text-[#0c2144] font-bold text-base cursor-pointer hover:bg-gray-100 px-2 py-1 rounded transition-colors"
+                    className="text-[#0c2144] font-bold text-base cursor-pointer hover:bg-gray-100 px-2 py-1 rounded transition-colors truncate max-w-48"
                     onClick={() => onStartEditList(list.id, list.title)}
                   >
                     {list.title}
@@ -98,7 +94,7 @@ export default function List({
         </div>
         
         <div className="p-1 space-y-0.5">
-          {list.cards.length === 0 ? (
+          {(list.cards || []).length === 0 ? (
             <div 
               className="h-8 bg-transparent transition-all duration-200 drop-zone border-2 border-dashed border-gray-200 rounded-lg"
               onDragOver={onDragOver}
@@ -114,18 +110,12 @@ export default function List({
                 onDrop={(e) => onDrop(e, 'card', null, list.id, 0)}
               />
               
-              {list.cards.map((card, cardIndex) => (
+              {(list.cards || []).map((card, cardIndex) => (
                 <Card
                   key={card.id}
                   card={card}
                   cardIndex={cardIndex}
                   listId={list.id}
-                  editingCardId={editingCardId}
-                  editingText={editingText}
-                  setEditingText={setEditingText}
-                  onStartEditCard={onStartEditCard}
-                  onSaveCardTitle={onSaveCardTitle}
-                  onCancelEditCard={onCancelEditCard}
                   onDeleteCard={onDeleteCard}
                   onDragStart={onDragStart}
                   onDragOver={onDragOver}
@@ -140,7 +130,7 @@ export default function List({
                 className="h-1 bg-transparent transition-all duration-200 drop-zone"
                 onDragOver={onDragOver}
                 onDragLeave={onDragLeave}
-                onDrop={(e) => onDrop(e, 'card', null, list.id, list.cards.length)}
+                onDrop={(e) => onDrop(e, 'card', null, list.id, (list.cards || []).length)}
               />
             </>
           )}

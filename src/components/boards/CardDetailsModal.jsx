@@ -25,7 +25,7 @@ export default function CardDetailsModal({
   getCardAssignees,
   addCardAssignee,
   removeCardAssignee,
-  onRefreshBoardLabels,
+  onAddBoardLabel,
   onCardUpdate
 }) {
   const [description, setDescription] = useState(card?.description || '')
@@ -42,6 +42,9 @@ export default function CardDetailsModal({
   const [labelTitle, setLabelTitle] = useState('')
   const [selectedColor, setSelectedColor] = useState(null)
   const [isCreatingLabel, setIsCreatingLabel] = useState(false)
+  const [isSavingDescription, setIsSavingDescription] = useState(false)
+  const [isAddingComment, setIsAddingComment] = useState(false)
+  const [pendingCardUpdate, setPendingCardUpdate] = useState(null)
   const modalRef = useRef(null)
   const membersDropdownRef = useRef(null)
   const labelsDropdownRef = useRef(null)
@@ -56,6 +59,13 @@ export default function CardDetailsModal({
     { name: 'Pink', color: '#ec4899' },
     { name: 'Gray', color: '#6b7280' }
   ]
+
+  useEffect(() => {
+    if (pendingCardUpdate && onCardUpdate && card) {
+      onCardUpdate(card.id, pendingCardUpdate)
+      setPendingCardUpdate(null)
+    }
+  }, [pendingCardUpdate, onCardUpdate, card?.id])
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -97,34 +107,27 @@ export default function CardDetailsModal({
 
   useEffect(() => {
     if (isOpen && card) {
-      console.log('Card prop received:', card)
-      console.log('Card description:', card.description)
-      console.log('Card due_date:', card.due_date)
-      console.log('Card labels:', card.labels)
-      console.log('Card assignees:', card.assignees)
-      console.log('Card comments:', card.comments)
-      
       setDescription(card.description || '')
       setTitle(card.title || '')
       setDueDate(card.due_date || null)
-      
       setComments(card.comments || [])
       setCardLabels(card.labels || [])
       setCardAssignees(card.assignees || [])
     }
-  }, [isOpen, card])
+  }, [isOpen, card?.id])
 
   if (!isOpen || !card) return null
 
   const handleSaveDescription = async () => {
-    if (onUpdateCard) {
+    if (onUpdateCard && !isSavingDescription) {
+      setIsSavingDescription(true)
       try {
-        console.log('Saving description:', description.trim())
         await onUpdateCard(card.id, { description: description.trim() })
         setIsEditingDescription(false)
-        console.log('Description saved successfully')
       } catch (error) {
         console.error('Error saving description:', error)
+      } finally {
+        setIsSavingDescription(false)
       }
     }
   }
@@ -143,11 +146,9 @@ export default function CardDetailsModal({
   const handleSaveDueDate = async (newDate) => {
     if (onUpdateCard) {
       try {
-        console.log('Saving due date:', newDate)
         await onUpdateCard(card.id, { due_date: newDate })
         setDueDate(newDate)
         setIsDatePickerOpen(false)
-        console.log('Due date saved successfully')
       } catch (error) {
         console.error('Error saving due date:', error)
       }
@@ -184,37 +185,70 @@ export default function CardDetailsModal({
   }
 
   const handleAddComment = async () => {
-    if (commentText.trim()) {
+    if (commentText.trim() && !isAddingComment) {
+      setIsAddingComment(true)
+      const commentTextToAdd = commentText.trim()
+      setCommentText('')
+
+      const tempComment = {
+        id: `temp_${Date.now()}`,
+        body: commentTextToAdd,
+        card_id: card.id,
+        author_id: 'current_user',
+        created_at: new Date().toISOString(),
+        author: { display_name: 'You', avatar_url: null }
+      }
+
+      const updatedComments = [...comments, tempComment]
+      setComments(updatedComments)
+      setPendingCardUpdate({ comments: updatedComments })
+
       try {
-        console.log('Adding comment:', commentText.trim())
-        const newComment = await addCardComment(card.id, commentText.trim())
-        console.log('Comment added successfully:', newComment)
-        const updatedComments = [...comments, newComment]
-        setComments(updatedComments)
-        setCommentText('')
+        await addCardComment(card.id, commentTextToAdd)
         
-        if (onCardUpdate) {
-          onCardUpdate(card.id, { comments: updatedComments })
-        }
+        setComments(prevComments => {
+          const finalComments = prevComments.map(c => c.id === tempComment.id ? { ...c, id: `real_${Date.now()}` } : c)
+          setPendingCardUpdate({ comments: finalComments })
+          return finalComments
+        })
       } catch (error) {
+        setComments(comments)
+        setPendingCardUpdate({ comments })
         console.error('Error adding comment:', error)
+      } finally {
+        setIsAddingComment(false)
       }
     }
   }
 
   const handleAddLabel = async (colorName, colorValue, customTitle = null) => {
-    try {
-      setIsCreatingLabel(true)
-      
-      const labelName = customTitle || colorName
-      console.log('handleAddLabel called with:', { colorName, colorValue, customTitle, labelName })
-      
-      let existingLabel = null
-      if (!customTitle) {
-        existingLabel = boardLabels.find(label => label.color_hex === colorValue)
+    if (isCreatingLabel) return
+
+    setIsCreatingLabel(true)
+    const labelName = customTitle || colorName
+    
+    let existingLabel = null
+    if (!customTitle) {
+      existingLabel = boardLabels.find(label => label.color_hex === colorValue)
+    }
+    
+    if (!existingLabel) {
+      existingLabel = boardLabels.find(label => label.name === labelName)
+    }
+    
+    if (!existingLabel) {
+      const tempBoardLabel = {
+        id: `temp_board_${Date.now()}`,
+        name: labelName,
+        color_hex: colorValue,
+        board_id: boardId
       }
-      
-      if (!existingLabel) {
+
+      if (onAddBoardLabel) {
+        onAddBoardLabel(tempBoardLabel)
+      }
+
+      try {
         const response = await fetch(`/api/boards/${boardId}/labels`, {
           method: 'POST',
           headers: {
@@ -227,29 +261,67 @@ export default function CardDetailsModal({
         })
 
         if (!response.ok) {
-          throw new Error('Failed to create label')
+          const errorData = await response.json()
+          if (errorData.error && errorData.error.includes('duplicate')) {
+            const existingResponse = await fetch(`/api/boards/${boardId}/labels`)
+            if (existingResponse.ok) {
+              const allLabels = await existingResponse.json()
+              existingLabel = allLabels.find(label => label.name === labelName)
+            }
+          } else {
+            throw new Error('Failed to create label')
+          }
+        } else {
+          existingLabel = await response.json()
         }
+      } catch (error) {
+        console.error('Error creating label:', error)
+        setIsCreatingLabel(false)
+        return
+      }
+    }
+    
+    if (!existingLabel) {
+      console.error('Could not find or create label')
+      setIsCreatingLabel(false)
+      return
+    }
+    
+    const tempLabel = {
+      id: `temp_${Date.now()}`,
+      name: existingLabel.name,
+      color_hex: existingLabel.color_hex,
+      board_id: boardId
+    }
 
-        existingLabel = await response.json()
-        console.log('Created new label:', existingLabel)
-        
-        if (onRefreshBoardLabels) {
-          await onRefreshBoardLabels()
-        }
+    const updatedLabels = [...cardLabels, tempLabel]
+    setCardLabels(updatedLabels)
+    setPendingCardUpdate({ labels: updatedLabels })
+    setActiveDropdown(null)
+    setLabelTitle('')
+    setSelectedColor(null)
+
+    try {
+      await addCardLabel(card.id, existingLabel.id)
+      
+      const finalLabel = {
+        id: existingLabel.id,
+        name: existingLabel.name,
+        color_hex: existingLabel.color_hex,
+        board_id: boardId
       }
       
-      const newLabel = await addCardLabel(card.id, existingLabel.id)
-      const updatedLabels = [...cardLabels, newLabel]
-      setCardLabels(updatedLabels)
-      setActiveDropdown(null)
-      setLabelTitle('')
-      setSelectedColor(null)
-      
-      if (onCardUpdate) {
-        onCardUpdate(card.id, { labels: updatedLabels })
-      }
+      setCardLabels(prevLabels => {
+        const finalLabels = prevLabels.map(l => l.id === tempLabel.id ? finalLabel : l)
+        setPendingCardUpdate({ labels: finalLabels })
+        return finalLabels
+      })
     } catch (error) {
-      console.error('Error adding label:', error)
+      console.error('Error adding label to card:', error)
+      console.error('Card ID:', card.id)
+      console.error('Label ID:', existingLabel.id)
+      setCardLabels(cardLabels)
+      setPendingCardUpdate({ labels: cardLabels })
     } finally {
       setIsCreatingLabel(false)
     }
@@ -260,54 +332,66 @@ export default function CardDetailsModal({
   }
 
   const handleCreateLabel = () => {
-    if (selectedColor) {
+    if (selectedColor && !isCreatingLabel) {
       const title = labelTitle.trim() || selectedColor.name
-      console.log('Creating label with:', { title, colorName: selectedColor.name, colorValue: selectedColor.color })
       handleAddLabel(selectedColor.name, selectedColor.color, title)
     }
   }
 
   const handleRemoveLabel = async (labelId) => {
+    const originalLabels = cardLabels
+    const updatedLabels = cardLabels.filter(label => label.id !== labelId)
+    setCardLabels(updatedLabels)
+    setPendingCardUpdate({ labels: updatedLabels })
+
     try {
       await removeCardLabel(card.id, labelId)
-      const updatedLabels = cardLabels.filter(label => label.id !== labelId)
-      setCardLabels(updatedLabels)
-      
-      if (onCardUpdate) {
-        onCardUpdate(card.id, { labels: updatedLabels })
-      }
     } catch (error) {
+      setCardLabels(originalLabels)
+      setPendingCardUpdate({ labels: originalLabels })
       console.error('Error removing label:', error)
     }
   }
 
   const handleAddAssignee = async (userId) => {
+    const user = boardMembers.find(m => m.id === userId)
+    const tempAssignee = {
+      id: userId,
+      display_name: user?.display_name || 'Unknown User',
+      avatar_url: user?.avatar_url || null
+    }
+
+    const updatedAssignees = [...cardAssignees, tempAssignee]
+    setCardAssignees(updatedAssignees)
+    setPendingCardUpdate({ assignees: updatedAssignees })
+    setActiveDropdown(null)
+
     try {
-      const newAssignee = await addCardAssignee(card.id, userId)
-      const updatedAssignees = [...cardAssignees, newAssignee]
-      setCardAssignees(updatedAssignees)
-      setActiveDropdown(null)
+      await addCardAssignee(card.id, userId)
       
-      if (onCardUpdate) {
-        onCardUpdate(card.id, { assignees: updatedAssignees })
-      }
+      setCardAssignees(prevAssignees => {
+        const finalAssignees = prevAssignees.map(a => a.id === userId ? { ...a, id: `real_${Date.now()}` } : a)
+        setPendingCardUpdate({ assignees: finalAssignees })
+        return finalAssignees
+      })
     } catch (error) {
+      setCardAssignees(cardAssignees)
+      setPendingCardUpdate({ assignees: cardAssignees })
       console.error('Error adding assignee:', error)
     }
   }
 
   const handleRemoveAssignee = async (userId) => {
+    const originalAssignees = cardAssignees
+    const updatedAssignees = cardAssignees.filter(assignee => assignee.id !== userId)
+    setCardAssignees(updatedAssignees)
+    setPendingCardUpdate({ assignees: updatedAssignees })
+
     try {
-      console.log('Removing assignee:', userId, 'from card:', card.id)
-      const result = await removeCardAssignee(card.id, userId)
-      console.log('Remove assignee result:', result)
-      const updatedAssignees = cardAssignees.filter(assignee => assignee.id !== userId)
-      setCardAssignees(updatedAssignees)
-      
-      if (onCardUpdate) {
-        onCardUpdate(card.id, { assignees: updatedAssignees })
-      }
+      await removeCardAssignee(card.id, userId)
     } catch (error) {
+      setCardAssignees(originalAssignees)
+      setPendingCardUpdate({ assignees: originalAssignees })
       console.error('Error removing assignee:', error)
     }
   }
@@ -407,6 +491,7 @@ export default function CardDetailsModal({
                 onStartEditDescription={setIsEditingDescription}
                 onCancelEditDescription={() => setIsEditingDescription(false)}
                 originalDescription={card?.description || ''}
+                isSavingDescription={isSavingDescription}
               />
             </div>
           </div>
@@ -417,6 +502,7 @@ export default function CardDetailsModal({
             onAddComment={handleAddComment}
             comments={comments}
             formatTimeAgo={formatTimeAgo}
+            isAddingComment={isAddingComment}
           />
         </div>
       </div>

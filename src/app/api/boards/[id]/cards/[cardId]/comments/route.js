@@ -147,17 +147,17 @@ export async function POST(request, { params }) {
       return NextResponse.json({ error: 'Card not found' }, { status: 404 })
     }
 
-    console.log('Creating comment with data:', {
-      card_id: cardId,
-      body: body.content,
-      author_id: userId
-    })
+    const commentBody = body.content || body.body
+
+    if (!commentBody) {
+      return NextResponse.json({ error: 'Comment body is required' }, { status: 400 })
+    }
 
     const { data: newComment, error: createError } = await supabase
       .from('comments')
       .insert({
         card_id: cardId,
-        body: body.content,
+        body: commentBody,
         author_id: userId
       })
       .select(`
