@@ -23,64 +23,42 @@ This stack was chosen because it covers everything needed for a real-time, multi
 - **Search & Filters** – Quickly find cards by title, label, or assignee.  
 - **Responsive UI** – Works seamlessly on both desktop and mobile.  
 
-## 🛠️ Setup Instructions
+## 🛠️ Installation Process
 
-### Prerequisites
-- Node.js 18+ 
-- npm or yarn
-- Supabase account
+### Quick Start
+1. **Pull the code from GitHub**
+   ```bash
+   git clone https://github.com/KhushiGusain/trello-mini.git
+   cd trello-mini
+   ```
 
-### 1. Install Dependencies
-```bash
-npm install
-# or
-yarn install
-```
+2. **Create env file in root directory**
+   Create a `.env.local` file in the root directory and copy data from: [Environment Variables](https://anotepad.com/note/read/cssrnwcj)
 
-### 2. Environment Setup
-Create a `.env.local` file in the root directory:
-```bash
-cp .env.example .env.local
-```
-Fill in your Supabase credentials. For environment variables reference, visit: [Environment Variables](https://anotepad.com/note/read/cssrnwcj)
+3. **Install dependencies**
+   ```bash
+   npm install
+   ```
 
-### 3. Database Setup
-1. Create a new Supabase project
-2. Go to your Supabase SQL Editor
-3. Copy and paste the SQL contents from: [Database Schema](https://dbdiagram.io/d/68a8f8531e7a6119673877b7)
-4. Execute the script to create all tables, indexes.
+4. **Run the development server**
+   ```bash
+   npm run dev
+   ```
 
-### 4. Create Test Accounts
-1. Start the development server:
-```bash
-npm run dev
-# or
-yarn dev
-```
-2. Open [http://localhost:3000](http://localhost:3000)
-3. Create at least 2 user accounts through the signup page for collaboration testing.
-4. The database script will automatically use these accounts to create sample data
+### Alternative: Use Hosted Version
+**Hosted on Google Cloud**: [https://treeeee-89641958063.asia-south2.run.app/](https://treeeee-89641958063.asia-south2.run.app/)
 
-### 5. Run the Development Server
-```bash
-npm run dev
-# or
-yarn dev
-```
+### Login Details
+Use these login details:
+- **Email**: khushigusain05@gmail.com | **Password**: admin123
+- **Email**: saksham@gmail.com | **Password**: admin123
 
-### 6. Real-time Features
-Real-time features are automatically enabled through Supabase Realtime. No additional server setup required.
-
-## 🗄️ Database Schema Overview
-
+### Database Schema
 For the complete database schema diagram, visit: [Database Schema](https://dbdiagram.io/d/68a8f8531e7a6119673877b7)
 
 
-### Key Features
-- **Real-time updates** via Supabase Realtime
-- **Row Level Security** for data protection
-- **Full-text search** on card titles and descriptions
-- **Audit trail** with activity logging
+### 6. Real-time Features
+Real-time features are automatically enabled through Supabase Realtime. No additional server setup required.
 
 ## 📱 Screenshots
 
@@ -94,7 +72,7 @@ For the complete database schema diagram, visit: [Database Schema](https://dbdia
 ![Workspace boards page with team collaboration features](screenshots/WorkspaceBoardsPage.png)
 
 ### Kanban Board Interface
-![Kanban board with lists, cards, and drag-and-drop functionality](screenshots/KanbanBoard.png)
+![Kanban board with lists, cards, and drag-and-drop functionality](screenshots/kanban.png)
 
 ### Card Details & Management
 ![Card details modal with comments, labels, assignees, and due dates](screenshots/CardDetails.png)
@@ -104,24 +82,6 @@ For the complete database schema diagram, visit: [Database Schema](https://dbdia
 
 ### Workspace Member Management
 ![Workspace member management interface for collaboration](screenshots/workspaceMembers.png)
-
-## 🚀 Live Demo
-
-**Live Demo**: [https://treeeee-89641958063.asia-south2.run.app/](https://treeeee-89641958063.asia-south2.run.app/)
-
-### Test Accounts for Interviewers
-For easy testing experience, use these pre-loaded accounts:
-- **Email**: khushigusain05@gmail.com | **Password**: admin123
-- **Email**: saksham@gmail.com | **Password**: admin123
-
-These accounts have dummy data loaded for a complete demonstration of all features.
-
-
-### Manual Deployment
-```bash
-npm run build
-npm start
-```
 
 ## Next Steps
 
