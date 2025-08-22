@@ -223,6 +223,11 @@ export default function CardDetailsModal({
 
   const handleAddLabel = async (colorName, colorValue, customTitle = null) => {
     if (isCreatingLabel) return
+    
+    if (card.id.startsWith('temp_')) {
+      console.error('Cannot add labels to unsaved cards')
+      return
+    }
 
     setIsCreatingLabel(true)
     const labelName = customTitle || colorName
@@ -287,14 +292,14 @@ export default function CardDetailsModal({
       return
     }
     
-    const tempLabel = {
-      id: `temp_${Date.now()}`,
+    const finalLabel = {
+      id: existingLabel.id,
       name: existingLabel.name,
       color_hex: existingLabel.color_hex,
       board_id: boardId
     }
 
-    const updatedLabels = [...cardLabels, tempLabel]
+    const updatedLabels = [...cardLabels, finalLabel]
     setCardLabels(updatedLabels)
     setPendingCardUpdate({ labels: updatedLabels })
     setActiveDropdown(null)
@@ -303,19 +308,6 @@ export default function CardDetailsModal({
 
     try {
       await addCardLabel(card.id, existingLabel.id)
-      
-      const finalLabel = {
-        id: existingLabel.id,
-        name: existingLabel.name,
-        color_hex: existingLabel.color_hex,
-        board_id: boardId
-      }
-      
-      setCardLabels(prevLabels => {
-        const finalLabels = prevLabels.map(l => l.id === tempLabel.id ? finalLabel : l)
-        setPendingCardUpdate({ labels: finalLabels })
-        return finalLabels
-      })
     } catch (error) {
       console.error('Error adding label to card:', error)
       console.error('Card ID:', card.id)
@@ -354,6 +346,11 @@ export default function CardDetailsModal({
   }
 
   const handleAddAssignee = async (userId) => {
+    if (card.id.startsWith('temp_')) {
+      console.error('Cannot add assignees to unsaved cards')
+      return
+    }
+    
     const user = boardMembers.find(m => m.id === userId)
     const tempAssignee = {
       id: userId,
@@ -368,12 +365,6 @@ export default function CardDetailsModal({
 
     try {
       await addCardAssignee(card.id, userId)
-      
-      setCardAssignees(prevAssignees => {
-        const finalAssignees = prevAssignees.map(a => a.id === userId ? { ...a, id: `real_${Date.now()}` } : a)
-        setPendingCardUpdate({ assignees: finalAssignees })
-        return finalAssignees
-      })
     } catch (error) {
       setCardAssignees(cardAssignees)
       setPendingCardUpdate({ assignees: cardAssignees })

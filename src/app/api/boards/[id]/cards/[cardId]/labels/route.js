@@ -247,6 +247,22 @@ export async function DELETE(request, { params }) {
       return NextResponse.json({ error: 'Card not found' }, { status: 404 })
     }
 
+    const { data: existingCardLabel, error: checkError } = await supabase
+      .from('card_labels')
+      .select('*')
+      .eq('card_id', cardId)
+      .eq('label_id', labelId)
+      .single()
+    
+    if (checkError) {
+      console.error('Error checking existing card label:', checkError)
+      return NextResponse.json({ error: 'Label not found on card' }, { status: 404 })
+    }
+    
+    if (!existingCardLabel) {
+      return NextResponse.json({ error: 'Label not found on card' }, { status: 404 })
+    }
+
     const { error: deleteError } = await supabase
       .from('card_labels')
       .delete()

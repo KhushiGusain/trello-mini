@@ -3,22 +3,28 @@
 import { useState } from 'react'
 
 export default function AddListButton({ showAddList, setShowAddList, newListTitle, setNewListTitle, createList }) {
+  const [isCreating, setIsCreating] = useState(false)
+
   const handleCreateList = async (e) => {
     e.preventDefault()
-    if (!newListTitle.trim()) return
+    if (!newListTitle.trim() || isCreating) return
 
     const listTitle = newListTitle.trim()
-    setNewListTitle('')
-    setShowAddList(false)
+    setIsCreating(true)
 
     try {
       await createList(listTitle)
+      setNewListTitle('')
+      setShowAddList(false)
     } catch (error) {
       console.error('Error creating list:', error)
+    } finally {
+      setIsCreating(false)
     }
   }
 
   const handleCancel = () => {
+    if (isCreating) return
     setNewListTitle('')
     setShowAddList(false)
   }
@@ -36,20 +42,29 @@ export default function AddListButton({ showAddList, setShowAddList, newListTitl
               if (e.key === 'Enter') handleCreateList(e)
               if (e.key === 'Escape') handleCancel()
             }}
-            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#3a72ee] mb-3 truncate"
+            disabled={isCreating}
+            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#3a72ee] mb-3 truncate disabled:bg-gray-100 disabled:cursor-not-allowed"
             autoFocus
           />
           <div className="flex items-center space-x-2">
             <button
               onClick={handleCreateList}
-              disabled={!newListTitle.trim()}
-              className="px-4 py-2 bg-[#3a72ee] text-white text-sm font-medium rounded-lg hover:bg-[#2456f1] transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed disabled:hover:bg-gray-300"
+              disabled={!newListTitle.trim() || isCreating}
+              className="px-4 py-2 bg-[#3a72ee] text-white text-sm font-medium rounded-lg hover:bg-[#2456f1] transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed disabled:hover:bg-gray-300 flex items-center space-x-2"
             >
-              Add list
+              {isCreating ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  <span>Creating...</span>
+                </>
+              ) : (
+                'Add list'
+              )}
             </button>
             <button
               onClick={handleCancel}
-              className="px-4 py-2 text-gray-500 hover:text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-100 transition-colors"
+              disabled={isCreating}
+              className="px-4 py-2 text-gray-500 hover:text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-100 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed disabled:hover:bg-gray-300"
             >
               Cancel
             </button>

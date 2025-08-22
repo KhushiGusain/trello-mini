@@ -50,19 +50,6 @@ export default function useBoard(boardId) {
   }, [boardId])
 
   const createList = useCallback(async (title) => {
-    const tempId = `temp_${Date.now()}`
-    const newList = {
-      id: tempId,
-      title: title.trim(),
-      board_id: boardId,
-      position: (lists.length + 1) * 1000,
-      cards: [],
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    }
-
-    applyOptimisticUpdate(prevLists => [...prevLists, newList])
-
     try {
       const response = await fetch(`/api/boards/${boardId}/lists`, {
         method: 'POST',
@@ -74,19 +61,14 @@ export default function useBoard(boardId) {
 
       const createdList = await response.json()
       
-      applyOptimisticUpdate(prevLists => 
-        prevLists.map(list => list.id === tempId ? createdList : list)
-      )
+      applyOptimisticUpdate(prevLists => [...prevLists, createdList])
       
       return createdList
     } catch (err) {
-      applyOptimisticUpdate(prevLists => 
-        prevLists.filter(list => list.id !== tempId)
-      )
       console.error('Error creating list:', err)
       throw err
     }
-  }, [boardId, lists.length, applyOptimisticUpdate])
+  }, [boardId, applyOptimisticUpdate])
 
   const updateList = useCallback(async (listId, updates) => {
     const originalLists = lists
@@ -139,30 +121,6 @@ export default function useBoard(boardId) {
   }, [boardId, lists, applyOptimisticUpdate])
 
   const createCard = useCallback(async (listId, title) => {
-    const tempId = `temp_${Date.now()}`
-    const targetList = lists.find(l => l.id === listId)
-    const cardsLength = targetList?.cards?.length || 0
-    
-    const newCard = {
-      id: tempId,
-      title: title.trim(),
-      list_id: listId,
-      board_id: boardId,
-      position: (cardsLength + 1) * 1000,
-      description: null,
-      due_date: null,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    }
-
-    applyOptimisticUpdate(prevLists => 
-      prevLists.map(list => 
-        list.id === listId 
-          ? { ...list, cards: [...(list.cards || []), newCard] }
-          : list
-      )
-    )
-
     try {
       const response = await fetch(`/api/boards/${boardId}/cards`, {
         method: 'POST',
@@ -176,21 +134,14 @@ export default function useBoard(boardId) {
       
       applyOptimisticUpdate(prevLists => 
         prevLists.map(list => 
-        list.id === listId 
-            ? { ...list, cards: (list.cards || []).map(card => card.id === tempId ? createdCard : card) }
-          : list
+          list.id === listId 
+            ? { ...list, cards: [...(list.cards || []), createdCard] }
+            : list
         )
       )
       
       return createdCard
     } catch (err) {
-      applyOptimisticUpdate(prevLists => 
-        prevLists.map(list => 
-          list.id === listId 
-            ? { ...list, cards: (list.cards || []).filter(card => card.id !== tempId) }
-            : list
-        )
-      )
       console.error('Error creating card:', err)
       throw err
     }
@@ -281,18 +232,20 @@ export default function useBoard(boardId) {
     setLists(newLists)
 
     try {
-      const cardsToUpdate = newLists.flatMap(list => 
-        list.cards
-          .filter(card => !card.id.startsWith('temp_'))
-          .map(card => ({
-            id: card.id,
-            list_id: list.id,
-            position: card.position,
-            title: card.title,
-            description: card.description,
-            due_date: card.due_date
-          }))
-      )
+      const cardsToUpdate = newLists
+        .filter(list => list && list.id && !list.id.startsWith('temp_'))
+        .flatMap(list => 
+          (list.cards || [])
+            .filter(card => card && card.id && !card.id.startsWith('temp_') && !card.id.startsWith('real_'))
+            .map(card => ({
+              id: card.id,
+              list_id: list.id,
+              position: card.position,
+              title: card.title,
+              description: card.description || '',
+              due_date: card.due_date
+            }))
+        )
       
       const response = await fetch(`/api/boards/${boardId}/cards`, {
         method: 'PUT',
@@ -310,21 +263,34 @@ export default function useBoard(boardId) {
   const moveCard = useCallback(async (fromListId, toListId, cardId, newPosition) => {
     const originalLists = lists
     
+    const movedCard = originalLists
+      .find(l => l.id === fromListId)
+      ?.cards?.find(c => c.id === cardId)
+
+    if (!movedCard) {
+      console.error('Card not found for moving:', { fromListId, cardId })
+      return
+    }
+
+    if (movedCard.id.startsWith('temp_') || movedCard.id.startsWith('real_')) {
+      console.log('Skipping move for temporary card:', movedCard.id)
+      return
+    }
+
     const updatedLists = lists.map(list => {
+      const cards = list.cards || []
+      
       if (list.id === fromListId) {
-        return { ...list, cards: list.cards.filter(card => card.id !== cardId) }
+        return { ...list, cards: cards.filter(card => card.id !== cardId) }
       }
       if (list.id === toListId) {
-        const card = originalLists.find(l => l.id === fromListId)?.cards.find(c => c.id === cardId)
-        if (card) {
-          const newCards = [...list.cards]
-          newCards.splice(newPosition, 0, { ...card, list_id: toListId })
-          const updatedCards = newCards.map((c, index) => ({
-            ...c,
-            position: (index + 1) * 1000
-          }))
-          return { ...list, cards: updatedCards }
-        }
+        const newCards = [...cards]
+        newCards.splice(newPosition, 0, { ...movedCard, list_id: toListId })
+        const updatedCards = newCards.map((c, index) => ({
+          ...c,
+          position: (index + 1) * 1000
+        }))
+        return { ...list, cards: updatedCards }
       }
       return list
     })
@@ -332,30 +298,27 @@ export default function useBoard(boardId) {
     setLists(updatedLists)
 
     try {
-      const movedCard = originalLists
-        .find(l => l.id === fromListId)
-        ?.cards.find(c => c.id === cardId)
+      const cardsToUpdate = updatedLists
+        .filter(list => list && list.id && !list.id.startsWith('temp_'))
+        .flatMap(list => 
+          (list.cards || [])
+            .filter(card => card && card.id && !card.id.startsWith('temp_') && !card.id.startsWith('real_'))
+            .map(card => ({
+              id: card.id,
+              list_id: list.id,
+              position: card.position,
+              title: card.title,
+              description: card.description || '',
+              due_date: card.due_date,
+              moved: card.id === cardId,
+              previous_list_id: fromListId
+            }))
+        )
 
-      if (!movedCard) throw new Error('Card not found')
+      console.log('Cards to update (filtered):', cardsToUpdate.map(c => ({ id: c.id, title: c.title })))
 
-      if (movedCard.id.startsWith('temp_')) {
-        return
-      }
-
-      const cardsToUpdate = updatedLists.flatMap(list => 
-        list.cards
-          .filter(card => !card.id.startsWith('temp_'))
-          .map(card => ({
-            id: card.id,
-            list_id: list.id,
-            position: card.position,
-            title: card.title,
-            description: card.description,
-            due_date: card.due_date,
-            moved: card.id === cardId,
-            previous_list_id: fromListId
-          }))
-      )
+      console.log('Moving card:', { cardId, fromListId, toListId, newPosition })
+      console.log('Cards to update:', cardsToUpdate.length)
 
       const response = await fetch(`/api/boards/${boardId}/cards`, {
         method: 'PUT',
@@ -363,10 +326,14 @@ export default function useBoard(boardId) {
         body: JSON.stringify({ cards: cardsToUpdate }),
       })
 
-      if (!response.ok) throw new Error('Failed to move card')
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(`Failed to move card: ${errorData.error || response.statusText}`)
+      }
     } catch (err) {
       setLists(originalLists)
       console.error('Error moving card:', err)
+      throw err
     }
   }, [boardId, lists])
 
@@ -531,6 +498,32 @@ export default function useBoard(boardId) {
         return []
       }
     }, [boardId]),
+    inviteBoardMember: async (email) => {
+      try {
+        const response = await fetch(`/api/boards/${boardId}/members`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email }),
+        })
+        if (!response.ok) throw new Error('Failed to invite member')
+        return await response.json()
+      } catch (err) {
+        console.error('Error inviting member:', err)
+        throw err
+      }
+    },
+    removeBoardMember: async (memberId) => {
+      try {
+        const response = await fetch(`/api/boards/${boardId}/members?member_id=${memberId}`, {
+          method: 'DELETE',
+        })
+        if (!response.ok) throw new Error('Failed to remove member')
+        return await response.json()
+      } catch (err) {
+        console.error('Error removing member:', err)
+        throw err
+      }
+    },
 
   }
 }

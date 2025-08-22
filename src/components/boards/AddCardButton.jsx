@@ -5,23 +5,28 @@ import { useState } from 'react'
 export default function AddCardButton({ listId, onCreateCard }) {
   const [showForm, setShowForm] = useState(false)
   const [cardTitle, setCardTitle] = useState('')
+  const [isCreating, setIsCreating] = useState(false)
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    if (!cardTitle.trim()) return
+    if (!cardTitle.trim() || isCreating) return
 
     const title = cardTitle.trim()
-    setCardTitle('')
-    setShowForm(false)
+    setIsCreating(true)
 
     try {
       await onCreateCard(listId, title)
+      setCardTitle('')
+      setShowForm(false)
     } catch (error) {
       console.error('Error creating card:', error)
+    } finally {
+      setIsCreating(false)
     }
   }
 
   const handleCancel = () => {
+    if (isCreating) return
     setCardTitle('')
     setShowForm(false)
   }
@@ -40,20 +45,29 @@ export default function AddCardButton({ listId, onCreateCard }) {
           onChange={(e) => setCardTitle(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder="Enter a title for this card..."
-          className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3a72ee] focus:border-transparent truncate mb-3"
+          disabled={isCreating}
+          className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3a72ee] focus:border-transparent truncate mb-3 disabled:bg-gray-100 disabled:cursor-not-allowed"
           autoFocus
         />
         <div className="flex items-center space-x-2">
           <button
             onClick={handleSubmit}
-            disabled={!cardTitle.trim()}
-            className="px-4 cursor-pointer py-2 bg-[#3a72ee] text-white text-sm font-medium rounded-lg hover:bg-[#2456f1] transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed disabled:hover:bg-gray-300"
+            disabled={!cardTitle.trim() || isCreating}
+            className="px-4 cursor-pointer py-2 bg-[#3a72ee] text-white text-sm font-medium rounded-lg hover:bg-[#2456f1] transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed disabled:hover:bg-gray-300 flex items-center space-x-2"
           >
-            Add card
+            {isCreating ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                <span>Creating...</span>
+              </>
+            ) : (
+              'Add card'
+            )}
           </button>
           <button
             onClick={handleCancel}
-            className="px-4 py-2 cursor-pointer text-gray-500 hover:text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-100 transition-colors"
+            disabled={isCreating}
+            className="px-4 py-2 cursor-pointer text-gray-500 hover:text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-100 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed disabled:hover:bg-gray-300"
           >
             Cancel
           </button>

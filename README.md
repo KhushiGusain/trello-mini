@@ -10,6 +10,11 @@ A modern, lightweight Trello clone built with Next.js App Router for efficient t
 - 🔒 Form validation and password strength indicator
 - 🎯 Clean component architecture
 - ⚡ Built with Next.js 14 App Router
+- 👥 Board member management (invite, remove, role management)
+- 🔍 Real-time search and filtering
+- 📝 Card management with labels, assignees, and comments
+- 📊 Activity tracking and logging
+- 🎯 Drag-and-drop Kanban board functionality
 
 ## Getting Started
 
@@ -80,10 +85,12 @@ The app uses a carefully crafted color scheme:
 ## Tech Stack
 
 - **Framework**: Next.js 14 with App Router
+- **Database**: Supabase (PostgreSQL)
 - **Styling**: Tailwind CSS with custom CSS variables
 - **Components**: Custom React components
 - **Validation**: Client-side form validation
-- **Icons**: Inline SVG (Google icon)
+- **Icons**: Inline SVG
+- **Authentication**: JWT-based with Supabase Auth
 
 ## Development
 

@@ -171,8 +171,6 @@ export async function PUT(request, { params }) {
     const { id: boardId } = await params
     const body = await request.json()
     
-    console.log('PUT /api/boards/[id]/cards - Received body:', body)
-    
     const supabase = await getSupabaseClient()
     
     const { board, boardMember } = await checkBoardAccess(boardId, userId)
@@ -189,12 +187,6 @@ export async function PUT(request, { params }) {
       console.error('Invalid cards data received:', body)
       return NextResponse.json({ error: 'Invalid cards data' }, { status: 400 })
     }
-
-    console.log('Updating cards with data:', body.cards.map(card => ({
-      id: card.id,
-      list_id: card.list_id,
-      position: card.position
-    })))
 
     const invalidCards = body.cards.filter(card => !card.list_id || !card.id)
     if (invalidCards.length > 0) {

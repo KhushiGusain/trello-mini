@@ -6,6 +6,7 @@ import { useEffect, use, useState, useRef, useCallback } from 'react'
 import { Button } from '@/components/ui'
 import KanbanBoard from '@/components/boards/KanbanBoard'
 import ActivitySidebar from '@/components/boards/ActivitySidebar'
+import BoardMembersModal from '@/components/boards/BoardMembersModal'
 import useBoard from '@/hooks/useBoard'
 
 export default function BoardPage({ params }) {
@@ -24,6 +25,7 @@ export default function BoardPage({ params }) {
   const [selectedResultIndex, setSelectedResultIndex] = useState(-1)
   const searchRef = useRef(null)
   const [cardToOpen, setCardToOpen] = useState(null)
+  const [isMembersModalOpen, setIsMembersModalOpen] = useState(false)
   
   const {
     board,
@@ -198,7 +200,14 @@ export default function BoardPage({ params }) {
     return lists.map(list => ({
       ...list,
       cards: list.cards.filter(card => {
-        const memberMatch = !selectedMember || card.assignees.some(assignee => assignee.id === selectedMember)
+        let memberMatch = true
+        if (selectedMember) {
+          if (selectedMember === 'unassigned') {
+            memberMatch = !card.assignees || card.assignees.length === 0
+          } else {
+            memberMatch = card.assignees && card.assignees.some(assignee => assignee.id === selectedMember)
+          }
+        }
         const dueDateMatch = !selectedDueDate || checkDueDateFilter(card.due_date, selectedDueDate)
         return memberMatch && dueDateMatch
       })
@@ -221,12 +230,12 @@ export default function BoardPage({ params }) {
     }
   }
 
-  if (loading || boardLoading) {
+  if (loading || boardLoading || !board) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#eff1f1]">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#3a72ee] mx-auto mb-4"></div>
-          <p className="text-[#6b7a90]">Loading...</p>
+          <p className="text-[#6b7a90]">Loading board...</p>
         </div>
       </div>
     )
@@ -295,7 +304,7 @@ export default function BoardPage({ params }) {
                       className="text-2xl font-bold text-[#0c2144] hover:underline cursor-pointer"
                       onClick={handleTitleEdit}
                     >
-                    {board?.title || 'Loading Board...'}
+                    {board.title}
                   </h1>
                   )}
                   <span className="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-[#e8f0ff] text-[#3a72ee]">
@@ -304,34 +313,50 @@ export default function BoardPage({ params }) {
                 </div>
                 
                 <div className="flex items-center space-x-4">
-                  <div className="flex items-center space-x-3">
-                    <span className="text-sm text-[#6b7a90] font-medium">Team</span>
-                    <div className="flex -space-x-2">
-                      <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center border-2 border-white shadow-sm cursor-pointer hover:scale-105 transition-transform">
-                        <span className="text-white text-sm font-semibold">K</span>
+                  {board?.visibility === 'workspace' ? (
+                    <div className="flex items-center space-x-3">
+                      <span className="text-sm text-[#6b7a90] font-medium">Team</span>
+                      <div className="flex -space-x-2">
+                        {boardMembers.slice(0, 5).map((member, index) => (
+                          <div 
+                            key={member.id}
+                            className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center border-2 border-white shadow-sm cursor-pointer hover:scale-105 transition-transform"
+                            title={member.display_name}
+                          >
+                            <span className="text-white text-sm font-semibold">
+                              {member.display_name?.charAt(0)?.toUpperCase() || 'U'}
+                            </span>
+                          </div>
+                        ))}
                       </div>
-                      <div className="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center border-2 border-white shadow-sm cursor-pointer hover:scale-105 transition-transform">
-                        <span className="text-white text-sm font-semibold">A</span>
-                      </div>
-                      <div className="w-8 h-8 rounded-full bg-purple-500 flex items-center justify-center border-2 border-white shadow-sm cursor-pointer hover:scale-105 transition-transform">
-                        <span className="text-white text-sm font-semibold">M</span>
-                      </div>
-                      <div className="w-8 h-8 rounded-full bg-orange-500 flex items-center justify-center border-2 border-white shadow-sm cursor-pointer hover:scale-105 transition-transform">
-                        <span className="text-white text-sm font-semibold">S</span>
-                      </div>
-                      <div className="w-8 h-8 rounded-full bg-pink-500 flex items-center justify-center border-2 border-white shadow-sm cursor-pointer hover:scale-105 transition-transform">
-                        <span className="text-white text-sm font-semibold">J</span>
+                      {boardMembers.length > 5 && (
+                        <span className="text-sm text-[#6b7a90] ml-2 cursor-pointer hover:text-[#0c2144] transition-colors">
+                          +{boardMembers.length - 5} more
+                        </span>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="flex items-center space-x-3">
+                      <span className="text-sm text-[#6b7a90] font-medium">Owner</span>
+                      <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center border-2 border-white shadow-sm">
+                        <span className="text-white text-sm font-semibold">
+                          {board?.created_by?.display_name?.charAt(0)?.toUpperCase() || 'U'}
+                        </span>
                       </div>
                     </div>
-                    <span className="text-sm text-[#6b7a90] ml-2 cursor-pointer hover:text-[#0c2144] transition-colors">+3 more</span>
-                  </div>
+                  )}
                   
-                  <button className="px-4 py-2 border border-[#3a72ee] text-[#3a72ee] rounded-lg hover:bg-[#e8f0ff] transition-colors font-medium flex items-center space-x-2 cursor-pointer">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                    </svg>
-                    <span>Invite</span>
-                  </button>
+                  {board?.visibility === 'workspace' && (
+                    <button 
+                      onClick={() => setIsMembersModalOpen(true)}
+                      className="px-4 py-2 border border-[#3a72ee] text-[#3a72ee] rounded-lg hover:bg-[#e8f0ff] transition-colors font-medium flex items-center space-x-2 cursor-pointer"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                      </svg>
+                      <span>Invite</span>
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
@@ -439,7 +464,6 @@ export default function BoardPage({ params }) {
                        className="px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm text-[#0c2144] focus:outline-none focus:ring-2 focus:ring-[#3a72ee] focus:border-transparent cursor-pointer appearance-none pr-8"
                      >
                       <option value="">All Members</option>
-                      <option value="me">Assigned to me</option>
                       <option value="unassigned">Unassigned</option>
                        {boardMembers?.map(member => (
                          <option key={member.id} value={member.id}>{member.display_name}</option>
@@ -513,6 +537,14 @@ export default function BoardPage({ params }) {
           />
         </div>
       </div>
+
+      <BoardMembersModal
+        isOpen={isMembersModalOpen}
+        onClose={() => setIsMembersModalOpen(false)}
+        boardId={id}
+        currentUser={user}
+        onMemberUpdate={refreshFilterData}
+      />
     </div>
   )
 }

@@ -48,47 +48,42 @@ export async function GET() {
         }
       )
       
-      let { data: workspace, error: workspaceError } = await supabase
-        .from('workspaces')
-        .select('*')
-        .eq('created_by', userId)
-        .single()
-      
-      if (workspaceError && workspaceError.code !== 'PGRST116') {
-        console.error('Error fetching workspace:', workspaceError)
-        return NextResponse.json({ error: 'Failed to fetch workspace' }, { status: 500 })
-      }
-      
-      if (!workspace) {
-        const { data: newWorkspace, error: createError } = await supabase
-          .from('workspaces')
-          .insert({
-            name: 'My Workspace',
-            created_by: userId
-          })
-          .select()
-          .single()
-        
-        if (createError) {
-          console.error('Error creating workspace:', createError)
-          return NextResponse.json({ error: 'Failed to create workspace' }, { status: 500 })
-        }
-        
-        workspace = newWorkspace
-      }
-      
-      const { data: boards, error: boardsError } = await supabase
+      const { data: ownedBoards, error: ownedBoardsError } = await supabase
         .from('boards')
         .select('*')
-        .eq('workspace_id', workspace.id)
+        .eq('created_by', userId)
         .order('created_at', { ascending: false })
       
-      if (boardsError) {
-        console.error('Error fetching boards:', boardsError)
+      if (ownedBoardsError) {
+        console.error('Error fetching owned boards:', ownedBoardsError)
         return NextResponse.json({ error: 'Failed to fetch boards' }, { status: 500 })
       }
+
+      const { data: memberBoards, error: memberBoardsError } = await supabase
+        .from('board_members')
+        .select(`
+          board:boards(*)
+        `)
+        .eq('user_id', userId)
+        .eq('board.visibility', 'workspace')
       
-      return NextResponse.json(boards || [])
+      if (memberBoardsError) {
+        console.error('Error fetching member boards:', memberBoardsError)
+      }
+
+      const ownedBoardIds = new Set(ownedBoards?.map(board => board.id) || [])
+      const memberBoardData = memberBoards?.map(mb => mb.board).filter(board => !ownedBoardIds.has(board.id)) || []
+      
+      const allBoards = [
+        ...(ownedBoards || []),
+        ...memberBoardData
+      ]
+
+      const uniqueBoards = allBoards.filter((board, index, self) => 
+        index === self.findIndex(b => b.id === board.id)
+      )
+      
+      return NextResponse.json(uniqueBoards || [])
       
     } catch (decodeError) {
       console.error('Error decoding token:', decodeError)
@@ -149,6 +144,34 @@ export async function POST(request) {
           },
         }
       )
+      
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single()
+      
+      if (profileError && profileError.code !== 'PGRST116') {
+        console.error('Error fetching profile:', profileError)
+        return NextResponse.json({ error: 'Failed to fetch profile' }, { status: 500 })
+      }
+      
+      if (!profile) {
+        const { data: newProfile, error: createProfileError } = await supabase
+          .from('profiles')
+          .insert({
+            id: userId,
+            display_name: 'User',
+            email: payload.email || 'user@example.com'
+          })
+          .select()
+          .single()
+        
+        if (createProfileError) {
+          console.error('Error creating profile:', createProfileError)
+          return NextResponse.json({ error: 'Failed to create profile' }, { status: 500 })
+        }
+      }
       
       let { data: workspace, error: workspaceError } = await supabase
         .from('workspaces')

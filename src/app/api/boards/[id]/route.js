@@ -83,7 +83,11 @@ export async function GET(request, { params }) {
       .eq('user_id', userId)
       .single()
 
-    if (board.visibility === 'private' && !boardMember && board.created_by !== userId) {
+    if (board.visibility === 'private' && board.created_by !== userId) {
+      return NextResponse.json({ error: 'Access denied' }, { status: 403 })
+    }
+    
+    if (board.visibility === 'workspace' && !boardMember && board.created_by !== userId) {
       return NextResponse.json({ error: 'Access denied' }, { status: 403 })
     }
 
