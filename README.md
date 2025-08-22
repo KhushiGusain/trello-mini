@@ -72,7 +72,7 @@ Real-time features are automatically enabled through Supabase Realtime. No addit
 ![Workspace boards page with team collaboration features](screenshots/WorkspaceBoardsPage.png)
 
 ### Kanban Board Interface
-![Kanban board with lists, cards, and drag-and-drop functionality](screenshots/kanban.png)
+![Kanban board with lists, cards, and drag-and-drop functionality]<img width="1901" height="957" alt="image" src="https://github.com/user-attachments/assets/e22e23e7-7005-4380-b132-df36c2246d97" />
 
 ### Card Details & Management
 ![Card details modal with comments, labels, assignees, and due dates](screenshots/CardDetails.png)
