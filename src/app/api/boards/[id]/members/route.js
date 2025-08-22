@@ -215,14 +215,29 @@ export async function POST(request, { params }) {
       return NextResponse.json({ error: 'Failed to add member' }, { status: 500 })
     }
     
+    const memberData = {
+      id: user.id,
+      display_name: user.display_name,
+      avatar_url: user.avatar_url,
+      role: 'editor'
+    }
+    
+    try {
+      await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/boards/${boardId}/events`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          type: 'member_added',
+          member: memberData
+        })
+      })
+    } catch (error) {
+      console.error('Error broadcasting member added event:', error)
+    }
+    
     return NextResponse.json({ 
       message: 'Member invited successfully',
-      member: {
-        id: user.id,
-        display_name: user.display_name,
-        avatar_url: user.avatar_url,
-        role: 'editor'
-      }
+      member: memberData
     })
     
   } catch (error) {
@@ -281,6 +296,19 @@ export async function DELETE(request, { params }) {
     }
     
 
+    
+    try {
+      await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/boards/${boardId}/events`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          type: 'member_removed',
+          memberId: memberId
+        })
+      })
+    } catch (error) {
+      console.error('Error broadcasting member removed event:', error)
+    }
     
     return NextResponse.json({ message: 'Member removed successfully' })
     

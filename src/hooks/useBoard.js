@@ -65,21 +65,35 @@ export default function useBoard(boardId) {
       
       applyOptimisticUpdate(prevLists => [...prevLists, createdList])
       
-      fetch(`/api/boards/${boardId}/events`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          type: 'list_created',
-          list: createdList
-        })
-      }).catch(err => console.error('Broadcast error:', err))
+      if (board && board.visibility === 'workspace') {
+        fetch(`/api/boards/${boardId}/events`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            type: 'list_created',
+            list: createdList
+          })
+        }).catch(err => console.error('Broadcast error:', err))
+      }
+      
+      if (board && board.visibility === 'private') {
+        setActivities(prev => [{
+          id: `temp_${Date.now()}`,
+          type: 'list.created',
+          data: {
+            list_title: createdList.title
+          },
+          actor: { display_name: board.created_by },
+          created_at: new Date().toISOString()
+        }, ...prev.slice(0, 19)])
+      }
       
       return createdList
     } catch (err) {
       console.error('Error creating list:', err)
       throw err
     }
-  }, [boardId, applyOptimisticUpdate])
+  }, [boardId, applyOptimisticUpdate, board?.visibility])
 
   const updateList = useCallback(async (listId, updates) => {
     const originalLists = lists
@@ -104,13 +118,26 @@ export default function useBoard(boardId) {
         prevLists.map(list => list.id === listId ? { ...list, ...updatedList } : list)
       )
       
+      if (board && board.visibility === 'workspace') {
+        fetch(`/api/boards/${boardId}/events`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            type: 'list_updated',
+            listId: listId,
+            updates: updates,
+            updatedList: updatedList
+          })
+        }).catch(err => console.error('Broadcast error:', err))
+      }
+      
       return updatedList
     } catch (err) {
       setLists(originalLists)
       console.error('Error updating list:', err)
       throw err
     }
-  }, [boardId, lists, applyOptimisticUpdate])
+  }, [boardId, lists, applyOptimisticUpdate, board?.visibility])
 
   const deleteList = useCallback(async (listId) => {
     const originalLists = lists
@@ -124,12 +151,23 @@ export default function useBoard(boardId) {
       })
 
       if (!response.ok) throw new Error('Failed to delete list')
+      
+      if (board && board.visibility === 'workspace') {
+        fetch(`/api/boards/${boardId}/events`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            type: 'list_deleted',
+            listId: listId
+          })
+        }).catch(err => console.error('Broadcast error:', err))
+      }
     } catch (err) {
       setLists(originalLists)
       console.error('Error deleting list:', err)
       throw err
     }
-  }, [boardId, lists, applyOptimisticUpdate])
+  }, [boardId, lists, applyOptimisticUpdate, board?.visibility])
 
   const createCard = useCallback(async (listId, title) => {
     try {
@@ -151,22 +189,37 @@ export default function useBoard(boardId) {
          )
        )
       
-      fetch(`/api/boards/${boardId}/events`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          type: 'card_created',
-          card: createdCard,
-          listId: listId
-        })
-      }).catch(err => console.error('Broadcast error:', err))
+      if (board && board.visibility === 'workspace') {
+        fetch(`/api/boards/${boardId}/events`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            type: 'card_created',
+            card: createdCard,
+            listId: listId
+          })
+        }).catch(err => console.error('Broadcast error:', err))
+      }
+      
+      if (board && board.visibility === 'private') {
+        setActivities(prev => [{
+          id: `temp_${Date.now()}`,
+          type: 'card.created',
+          data: {
+            card_title: createdCard.title,
+            list_title: lists.find(l => l.id === listId)?.title || 'Unknown List'
+          },
+          actor: { display_name: board.created_by },
+          created_at: new Date().toISOString()
+        }, ...prev.slice(0, 19)])
+      }
       
       return createdCard
     } catch (err) {
       console.error('Error creating card:', err)
       throw err
     }
-  }, [boardId, lists, applyOptimisticUpdate])
+  }, [boardId, lists, applyOptimisticUpdate, board?.visibility])
 
   const updateCard = useCallback(async (cardId, updates) => {
     const originalLists = lists
@@ -199,13 +252,26 @@ export default function useBoard(boardId) {
         }))
       )
       
+      if (board && board.visibility === 'workspace') {
+        fetch(`/api/boards/${boardId}/events`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            type: 'card_updated',
+            cardId: cardId,
+            updates: updates,
+            updatedCard: updatedCard
+          })
+        }).catch(err => console.error('Broadcast error:', err))
+      }
+      
       return updatedCard
     } catch (err) {
       setLists(originalLists)
       console.error('Error updating card:', err)
       throw err
     }
-  }, [boardId, lists, applyOptimisticUpdate])
+  }, [boardId, lists, applyOptimisticUpdate, board?.visibility])
 
   const deleteCard = useCallback(async (listId, cardId) => {
     const originalLists = lists
@@ -223,12 +289,24 @@ export default function useBoard(boardId) {
       })
 
       if (!response.ok) throw new Error('Failed to delete card')
+      
+      if (board && board.visibility === 'workspace') {
+        fetch(`/api/boards/${boardId}/events`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            type: 'card_deleted',
+            cardId: cardId,
+            listId: listId
+          })
+        }).catch(err => console.error('Broadcast error:', err))
+      }
     } catch (err) {
       setLists(originalLists)
       console.error('Error deleting card:', err)
       throw err
     }
-  }, [boardId, lists, applyOptimisticUpdate])
+  }, [boardId, lists, applyOptimisticUpdate, board?.visibility])
 
   const updateListsOrder = useCallback(async (newLists) => {
     const originalLists = lists
@@ -242,11 +320,22 @@ export default function useBoard(boardId) {
       })
 
       if (!response.ok) throw new Error('Failed to update lists order')
+      
+      if (board && board.visibility === 'workspace') {
+        fetch(`/api/boards/${boardId}/events`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            type: 'lists_reordered',
+            newLists: newLists
+          })
+        }).catch(err => console.error('Broadcast error:', err))
+      }
     } catch (err) {
       setLists(originalLists)
       console.error('Error updating lists order:', err)
     }
-  }, [boardId, lists])
+  }, [boardId, lists, board?.visibility])
 
   const updateCardsOrder = useCallback(async (newLists) => {
     const originalLists = lists
@@ -276,19 +365,21 @@ export default function useBoard(boardId) {
 
       if (!response.ok) throw new Error('Failed to update cards order')
       
-      fetch(`/api/boards/${boardId}/events`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          type: 'card_moved',
-          newLists: newLists
-        })
-      }).catch(err => console.error('Broadcast error:', err))
+      if (board && board.visibility === 'workspace') {
+        fetch(`/api/boards/${boardId}/events`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            type: 'card_moved',
+            newLists: newLists
+          })
+        }).catch(err => console.error('Broadcast error:', err))
+      }
     } catch (err) {
       setLists(originalLists)
       console.error('Error updating cards order:', err)
     }
-  }, [boardId, lists])
+  }, [boardId, lists, board?.visibility])
 
   const moveCard = useCallback(async (fromListId, toListId, cardId, newPosition) => {
     const originalLists = lists
@@ -356,24 +447,26 @@ export default function useBoard(boardId) {
         throw new Error(`Failed to move card: ${errorData.error || response.statusText}`)
       }
 
-      fetch(`/api/boards/${boardId}/events`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          type: 'card_moved',
-          cardId: cardId,
-          fromListId: fromListId,
-          toListId: toListId,
-          newPosition: newPosition,
-          movedCard: movedCard
-        })
-      }).catch(err => console.error('Broadcast error:', err))
+      if (board && board.visibility === 'workspace') {
+        fetch(`/api/boards/${boardId}/events`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            type: 'card_moved',
+            cardId: cardId,
+            fromListId: fromListId,
+            toListId: toListId,
+            newPosition: newPosition,
+            movedCard: movedCard
+          })
+        }).catch(err => console.error('Broadcast error:', err))
+      }
     } catch (err) {
       setLists(originalLists)
       console.error('Error moving card:', err)
       throw err
     }
-  }, [boardId, lists])
+  }, [boardId, lists, board?.visibility])
 
   const updateBoard = useCallback(async (updates) => {
     try {
@@ -388,12 +481,24 @@ export default function useBoard(boardId) {
       const updatedBoard = await response.json()
       setBoard(prev => ({ ...prev, ...updatedBoard }))
       
+      if (board && board.visibility === 'workspace') {
+        fetch(`/api/boards/${boardId}/events`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            type: 'board_updated',
+            updates: updates,
+            updatedBoard: updatedBoard
+          })
+        }).catch(err => console.error('Broadcast error:', err))
+      }
+      
       return updatedBoard
     } catch (err) {
       console.error('Error updating board:', err)
       throw err
     }
-  }, [boardId])
+  }, [boardId, board?.visibility])
 
   const refetch = useCallback(() => {
     fetchBoard()
@@ -402,65 +507,124 @@ export default function useBoard(boardId) {
   useEffect(() => {
     fetchBoard()
     
-    const eventSource = new EventSource(`/api/boards/${boardId}/events`)
-    
-    eventSource.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data)
-        
-        if (data.type === 'card_moved') {
-          if (data.cardId && data.fromListId && data.toListId) {
-            const updatedLists = lists.map(list => {
-              if (list.id === data.fromListId) {
-                return { ...list, cards: list.cards.filter(card => card.id !== data.cardId) }
-              }
-              if (list.id === data.toListId && data.movedCard) {
-                const newCards = [...list.cards]
-                newCards.splice(data.newPosition || 0, 0, data.movedCard)
-                const updatedCards = newCards.map((c, index) => ({
-                  ...c,
-                  position: (index + 1) * 1000
-                }))
-                return { ...list, cards: updatedCards }
-              }
-              return list
-            })
-            setLists(updatedLists)
-          }
-        } else if (data.type === 'card_created' && data.card) {
-          const updatedLists = lists.map(list => {
-            if (list.id === data.listId) {
-              return { ...list, cards: [...list.cards, data.card] }
+    if (board && board.visibility === 'workspace') {
+      const eventSource = new EventSource(`/api/boards/${boardId}/events`)
+      
+      eventSource.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data)
+          
+          if (data.type === 'card_moved') {
+            if (data.cardId && data.fromListId && data.toListId) {
+              setLists(prevLists => {
+                const updatedLists = prevLists.map(list => {
+                  if (list.id === data.fromListId) {
+                    const cards = list.cards || []
+                    return { ...list, cards: cards.filter(card => card.id !== data.cardId) }
+                  }
+                  if (list.id === data.toListId && data.movedCard) {
+                    const cards = list.cards || []
+                    const existingCard = cards.find(card => card.id === data.cardId)
+                    if (existingCard) return list
+                    
+                    const newCards = [...cards]
+                    newCards.splice(data.newPosition || 0, 0, data.movedCard)
+                    const updatedCards = newCards.map((c, index) => ({
+                      ...c,
+                      position: (index + 1) * 1000
+                    }))
+                    return { ...list, cards: updatedCards }
+                  }
+                  return list
+                })
+                return updatedLists
+              })
             }
-            return list
-          })
-          setLists(updatedLists)
-        } else if (data.type === 'list_created' && data.list) {
-          setLists(prev => [...prev, data.list])
-        } else if (data.type === 'card_moved' && data.newLists) {
-          setLists(data.newLists)
+          } else if (data.type === 'card_created' && data.card) {
+            setLists(prevLists => {
+              const updatedLists = prevLists.map(list => {
+                if (list.id === data.listId) {
+                  const cards = list.cards || []
+                  const existingCard = cards.find(card => card.id === data.card.id)
+                  if (existingCard) return list
+                  return { ...list, cards: [...cards, data.card] }
+                }
+                return list
+              })
+              return updatedLists
+            })
+          } else if (data.type === 'list_created' && data.list) {
+            setLists(prevLists => {
+              const existingList = prevLists.find(list => list.id === data.list.id)
+              if (existingList) return prevLists
+              return [...prevLists, { ...data.list, cards: [] }]
+            })
+          } else if (data.type === 'card_moved' && data.newLists) {
+            setLists(data.newLists)
+          } else if (data.type === 'card_updated' && data.cardId && data.updatedCard) {
+            setLists(prevLists => {
+              const updatedLists = prevLists.map(list => ({
+                ...list,
+                cards: (list.cards || []).map(card => 
+                  card.id === data.cardId ? { ...card, ...data.updatedCard } : card
+                )
+              }))
+              return updatedLists
+            })
+          } else if (data.type === 'card_deleted' && data.cardId && data.listId) {
+            setLists(prevLists => {
+              const updatedLists = prevLists.map(list => {
+                if (list.id === data.listId) {
+                  return { ...list, cards: (list.cards || []).filter(card => card.id !== data.cardId) }
+                }
+                return list
+              })
+              return updatedLists
+            })
+          } else if (data.type === 'list_updated' && data.listId && data.updatedList) {
+            setLists(prevLists => {
+              const updatedLists = prevLists.map(list => 
+                list.id === data.listId ? { ...list, ...data.updatedList } : list
+              )
+              return updatedLists
+            })
+          } else if (data.type === 'list_deleted' && data.listId) {
+            setLists(prevLists => prevLists.filter(list => list.id !== data.listId))
+          } else if (data.type === 'lists_reordered' && data.newLists) {
+            setLists(data.newLists)
+          } else if (data.type === 'card_label_added' || data.type === 'card_label_removed') {
+            refetch()
+          } else if (data.type === 'card_assignee_added' || data.type === 'card_assignee_removed') {
+            refetch()
+          } else if (data.type === 'board_updated' && data.updatedBoard) {
+            setBoard(prev => ({ ...prev, ...data.updatedBoard }))
+          } else if (data.type === 'member_added' || data.type === 'member_removed') {
+            refetch()
+          } else if (data.type === 'activity_added' && data.activity) {
+            setActivities(prev => [data.activity, ...prev.slice(0, 19)])
+          }
+        } catch (error) {
+          console.error('Error parsing SSE message:', error)
         }
-      } catch (error) {
-        console.error('Error parsing SSE message:', error)
+      }
+      
+      eventSource.onerror = (error) => {
+        console.error('SSE connection error:', error)
+        eventSource.close()
+      }
+      
+      eventSourceRef.current = eventSource
+      
+      return () => {
+        if (abortControllerRef.current) {
+          abortControllerRef.current.abort()
+        }
+        if (eventSourceRef.current) {
+          eventSourceRef.current.close()
+        }
       }
     }
-    
-    eventSource.onerror = (error) => {
-      console.error('SSE connection error:', error)
-      eventSource.close()
-    }
-    
-    eventSourceRef.current = eventSource
-    
-    return () => {
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort()
-      }
-      if (eventSourceRef.current) {
-        eventSourceRef.current.close()
-      }
-    }
-  }, [fetchBoard, boardId])
+  }, [fetchBoard, boardId, board?.visibility])
 
   return {
     board,
@@ -504,11 +668,13 @@ export default function useBoard(boardId) {
         if (!response.ok) throw new Error('Failed to add comment')
         const comment = await response.json()
         
-        fetch(`/api/boards/${boardId}/events`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ type: 'card_updated' })
-        }).catch(err => console.error('Broadcast error:', err))
+        if (board && board.visibility === 'workspace') {
+          fetch(`/api/boards/${boardId}/events`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ type: 'card_updated' })
+          }).catch(err => console.error('Broadcast error:', err))
+        }
         
         return comment
       } catch (err) {
@@ -534,7 +700,21 @@ export default function useBoard(boardId) {
           body: JSON.stringify({ label_id: labelId }),
         })
         if (!response.ok) throw new Error('Failed to add label')
-        return await response.json()
+        const result = await response.json()
+        
+        if (board && board.visibility === 'workspace') {
+          fetch(`/api/boards/${boardId}/events`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+              type: 'card_label_added',
+              cardId: cardId,
+              labelId: labelId
+            })
+          }).catch(err => console.error('Broadcast error:', err))
+        }
+        
+        return result
       } catch (err) {
         console.error('Error adding label:', err)
         throw err
@@ -546,7 +726,21 @@ export default function useBoard(boardId) {
           method: 'DELETE',
         })
         if (!response.ok) throw new Error('Failed to remove label')
-        return await response.json()
+        const result = await response.json()
+        
+        if (board && board.visibility === 'workspace') {
+          fetch(`/api/boards/${boardId}/events`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+              type: 'card_label_removed',
+              cardId: cardId,
+              labelId: labelId
+            })
+          }).catch(err => console.error('Broadcast error:', err))
+        }
+        
+        return result
       } catch (err) {
         console.error('Error removing label:', err)
         throw err
@@ -570,7 +764,21 @@ export default function useBoard(boardId) {
           body: JSON.stringify({ user_id: userId }),
         })
         if (!response.ok) throw new Error('Failed to add assignee')
-        return await response.json()
+        const result = await response.json()
+        
+        if (board && board.visibility === 'workspace') {
+          fetch(`/api/boards/${boardId}/events`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+              type: 'card_assignee_added',
+              cardId: cardId,
+              userId: userId
+            })
+          }).catch(err => console.error('Broadcast error:', err))
+        }
+        
+        return result
       } catch (err) {
         console.error('Error adding assignee:', err)
         throw err
@@ -582,7 +790,21 @@ export default function useBoard(boardId) {
           method: 'DELETE',
         })
         if (!response.ok) throw new Error('Failed to remove assignee')
-        return await response.json()
+        const result = await response.json()
+        
+        if (board && board.visibility === 'workspace') {
+          fetch(`/api/boards/${boardId}/events`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+              type: 'card_assignee_removed',
+              cardId: cardId,
+              userId: userId
+            })
+          }).catch(err => console.error('Broadcast error:', err))
+        }
+        
+        return result
       } catch (err) {
         console.error('Error removing assignee:', err)
         throw err
