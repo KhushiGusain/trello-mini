@@ -128,7 +128,7 @@ export default function ActivitySidebar({ isCollapsed, onToggleCollapse, activit
                 <div key={activity.id} className="flex items-start space-x-3">
                   <div className="w-8 h-8 bg-[#3a72ee] rounded-full flex items-center justify-center flex-shrink-0">
                     <span className="text-white text-sm font-semibold">
-                      {activity.actor?.display_name?.charAt(0)?.toUpperCase() || 'U'}
+                      {(activity.actor?.display_name || 'U').charAt(0).toUpperCase()}
                     </span>
                   </div>
                   <div className="flex-1 min-w-0 overflow-hidden">

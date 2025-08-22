@@ -83,7 +83,7 @@ export default function useBoard(boardId) {
           data: {
             list_title: createdList.title
           },
-          actor: { display_name: board.created_by },
+          actor: { display_name: 'You' },
           created_at: new Date().toISOString()
         }, ...prev.slice(0, 19)])
       }
@@ -209,7 +209,7 @@ export default function useBoard(boardId) {
             card_title: createdCard.title,
             list_title: lists.find(l => l.id === listId)?.title || 'Unknown List'
           },
-          actor: { display_name: board.created_by },
+          actor: { display_name: 'You' },
           created_at: new Date().toISOString()
         }, ...prev.slice(0, 19)])
       }
@@ -803,7 +803,7 @@ export default function useBoard(boardId) {
               label_id: labelId,
               label_name: result.name
             },
-            actor: { display_name: board.created_by },
+            actor: { display_name: 'You' },
             created_at: new Date().toISOString()
           }, ...prev.slice(0, 19)])
         }
@@ -843,7 +843,7 @@ export default function useBoard(boardId) {
               card_title: lists.flatMap(l => l.cards || []).find(c => c.id === cardId)?.title || 'Unknown Card',
               label_id: labelId
             },
-            actor: { display_name: board.created_by },
+            actor: { display_name: 'You' },
             created_at: new Date().toISOString()
           }, ...prev.slice(0, 19)])
         }
