@@ -94,7 +94,7 @@ export function WorkspaceSwitcher() {
                   >
                     <button
                       onClick={() => handleWorkspaceSelect(workspace)}
-                      className="flex-1 flex items-center space-x-2 px-3 py-2 text-left"
+                      className="flex-1 flex items-center space-x-2 px-3 py-2 text-left cursor-pointer"
                     >
                       <div className="w-5 h-5 bg-blue-500 rounded flex items-center justify-center">
                         <span className="text-white text-xs font-bold">
@@ -114,7 +114,7 @@ export function WorkspaceSwitcher() {
                           e.stopPropagation()
                           handleDeleteWorkspace(workspace.id)
                         }}
-                        className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors mr-2"
+                        className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors cursor-pointer mr-2"
                         title="Delete workspace"
                       >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -132,7 +132,7 @@ export function WorkspaceSwitcher() {
                     setIsCreateModalOpen(true)
                     setIsDropdownOpen(false)
                   }}
-                  className="w-full flex items-center space-x-2 px-3 py-2 text-left hover:bg-gray-50 text-[var(--color-text-primary)]"
+                  className="w-full flex items-center space-x-2 px-3 py-2 text-left hover:bg-gray-50 text-[var(--color-text-primary)] cursor-pointer"
                 >
                   <div className="w-5 h-5 border-2 border-dashed border-gray-400 rounded flex items-center justify-center">
                     <span className="text-gray-400 text-xs font-bold">+</span>

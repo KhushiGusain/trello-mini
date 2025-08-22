@@ -92,7 +92,7 @@ export function CreateBoardModal({
                 key={color}
                 type="button"
                 onClick={() => onBoardDataChange({ ...boardData, backgroundColor: color })}
-                className={`w-8 h-8 rounded border-2 transition-all ${
+                className={`w-8 h-8 rounded border-2 transition-all cursor-pointer ${
                   boardData.backgroundColor === color 
                     ? 'border-[var(--color-navy)] scale-110' 
                     : 'border-[var(--color-border)] hover:scale-105'

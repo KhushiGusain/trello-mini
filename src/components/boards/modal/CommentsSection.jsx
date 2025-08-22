@@ -58,7 +58,7 @@ export default function CommentsSection({
                     <span className="font-medium">{comment.author?.display_name || 'Unknown'}</span>
                   </p>
                   <p className="text-sm text-gray-600 mt-1">{comment.body}</p>
-                  <button className="text-xs text-gray-500 hover:text-gray-700 mt-1">
+                  <button className="text-xs text-gray-500 hover:text-gray-700 mt-1 cursor-pointer">
                     {formatTimeAgo(comment.created_at)}
                   </button>
                 </div>

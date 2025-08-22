@@ -50,7 +50,7 @@ export default function AddListButton({ showAddList, setShowAddList, newListTitl
             <button
               onClick={handleCreateList}
               disabled={!newListTitle.trim() || isCreating}
-              className="px-4 py-2 bg-[var(--color-primary)] text-white text-sm font-medium rounded-lg hover:bg-[var(--color-primary-hover)] transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed disabled:hover:bg-gray-300 flex items-center space-x-2"
+              className="px-4 py-2 bg-[var(--color-primary)] text-white text-sm font-medium rounded-lg hover:bg-[var(--color-primary-hover)] transition-colors cursor-pointer disabled:bg-gray-300 disabled:cursor-not-allowed disabled:hover:bg-gray-300 flex items-center space-x-2"
             >
               {isCreating ? (
                 <>
@@ -64,7 +64,7 @@ export default function AddListButton({ showAddList, setShowAddList, newListTitl
             <button
               onClick={handleCancel}
               disabled={isCreating}
-              className="px-4 py-2 text-gray-500 hover:text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-100 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed disabled:hover:bg-gray-300"
+              className="px-4 py-2 text-gray-500 hover:text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-100 transition-colors cursor-pointer disabled:bg-gray-300 disabled:cursor-not-allowed disabled:hover:bg-gray-300"
             >
               Cancel
             </button>

@@ -225,7 +225,7 @@ export default function BoardMembersModal({
                       <button
                         onClick={() => handleAddWorkspaceMember(member.user?.email)}
                         disabled={loading}
-                        className="px-3 py-1 text-sm bg-blue-600 text-white hover:bg-blue-700 rounded transition-colors disabled:opacity-50"
+                        className="px-3 py-1 text-sm bg-blue-600 text-white hover:bg-blue-700 rounded transition-colors cursor-pointer disabled:opacity-50"
                       >
                         {loading ? 'Adding...' : 'Add'}
                       </button>

@@ -37,7 +37,7 @@ export function Modal({ isOpen, onClose, title, children }) {
           </h2>
           <button
             onClick={onClose}
-            className="text-[var(--color-muted)] hover:text-[var(--color-navy)] transition-colors"
+            className="text-[var(--color-muted)] hover:text-[var(--color-navy)] transition-colors cursor-pointer"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />

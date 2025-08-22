@@ -308,7 +308,7 @@ export default function MembersPage() {
                             {member.role !== 'owner' && (
                               <button
                                 onClick={() => handleRemoveMember(member.id)}
-                                className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                                className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
                                 title="Remove member"
                               >
                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

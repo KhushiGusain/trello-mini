@@ -74,7 +74,7 @@ export default function Sidebar({ boards = [], currentBoardId, onRefreshBoards, 
               <button 
                 onClick={onRefreshBoards}
                 disabled={isLoadingBoards}
-                className="p-1 hover:bg-gray-100 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="p-1 hover:bg-gray-100 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                 title="Refresh boards"
               >
                 {isLoadingBoards ? (
@@ -89,7 +89,7 @@ export default function Sidebar({ boards = [], currentBoardId, onRefreshBoards, 
             
             <button
               onClick={handleBoardsClick}
-              className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-left transition-colors ${
+              className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-left transition-colors cursor-pointer ${
                 isBoards 
                   ? 'bg-[var(--color-hover)] text-[var(--color-sidebar-active)] font-medium' 
                   : 'text-[var(--color-sidebar-inactive)] hover:bg-gray-50'
@@ -117,7 +117,7 @@ export default function Sidebar({ boards = [], currentBoardId, onRefreshBoards, 
                     <button
                       key={board.id}
                       onClick={() => handleBoardClick(board.id)}
-                      className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-left transition-colors ${
+                      className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-left transition-colors cursor-pointer ${
                         isCurrentBoard(board.id)
                           ? 'bg-[var(--color-hover)] text-[var(--color-sidebar-active)] font-medium'
                           : 'text-[var(--color-sidebar-inactive)] hover:bg-gray-50'
@@ -132,7 +132,7 @@ export default function Sidebar({ boards = [], currentBoardId, onRefreshBoards, 
                   {boards.length > 8 && (
                     <button
                       onClick={handleBoardsClick}
-                      className="w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-left transition-colors text-[var(--color-text-secondary)] hover:bg-gray-50"
+                      className="w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-left transition-colors cursor-pointer text-[var(--color-text-secondary)] hover:bg-gray-50"
                     >
                       <span className="text-sm">+ {boards.length - 8} more boards</span>
                     </button>
@@ -145,7 +145,7 @@ export default function Sidebar({ boards = [], currentBoardId, onRefreshBoards, 
 
           <button
             onClick={handleMembersClick}
-            className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-left transition-colors ${
+            className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-left transition-colors cursor-pointer ${
               isMembers
                 ? 'bg-[var(--color-hover)] text-[var(--color-sidebar-active)] font-medium'
                 : 'text-[var(--color-sidebar-inactive)] hover:bg-gray-50'
@@ -164,7 +164,7 @@ export default function Sidebar({ boards = [], currentBoardId, onRefreshBoards, 
         <div className="relative profile-menu">
           <button
             onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
-            className="w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-left transition-colors text-[var(--color-sidebar-inactive)] hover:bg-gray-50"
+            className="w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-left transition-colors cursor-pointer text-[var(--color-sidebar-inactive)] hover:bg-gray-50"
           >
             <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0">
               <span className="text-white text-xs font-bold">
@@ -194,7 +194,7 @@ export default function Sidebar({ boards = [], currentBoardId, onRefreshBoards, 
             <div className="absolute bottom-full left-0 right-0 mb-2 bg-white rounded-lg shadow-lg border border-[var(--color-border)] py-2">
               <button
                 onClick={handleProfileClick}
-                className="w-full text-left px-4 py-2 text-sm text-[var(--color-text-primary)] hover:bg-gray-50 transition-colors flex items-center space-x-2"
+                className="w-full text-left px-4 py-2 text-sm text-[var(--color-text-primary)] hover:bg-gray-50 transition-colors cursor-pointer flex items-center space-x-2"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
@@ -204,7 +204,7 @@ export default function Sidebar({ boards = [], currentBoardId, onRefreshBoards, 
               <div className="border-t border-[var(--color-border)] my-1"></div>
               <button
                 onClick={handleSignOut}
-                className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors flex items-center space-x-2"
+                className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors cursor-pointer flex items-center space-x-2"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
