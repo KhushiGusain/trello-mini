@@ -2,7 +2,83 @@
 
 import { useState } from 'react'
 
-export default function ActivitySidebar({ isCollapsed, onToggleCollapse }) {
+function getActivityText(activity) {
+  switch (activity.type) {
+    case 'card.created':
+      return (
+        <>
+          added <span className="text-[#3a72ee] font-medium">"{activity.data.card_title}"</span> to <span className="text-[#3a72ee] font-medium">"{activity.data.list_title || 'Unknown List'}"</span>
+        </>
+      )
+    case 'card.updated':
+      return (
+        <>
+          updated <span className="text-[#3a72ee] font-medium">"{activity.data.card_title}"</span>
+        </>
+      )
+    case 'card.moved':
+      return (
+        <>
+          moved <span className="text-[#3a72ee] font-medium">"{activity.data.card_title}"</span> to <span className="text-[#3a72ee] font-medium">"{activity.data.to_list_title || 'Unknown List'}"</span>
+        </>
+      )
+    case 'card.deleted':
+      return (
+        <>
+          deleted <span className="text-[#3a72ee] font-medium">"{activity.data.card_title}"</span>
+        </>
+      )
+    case 'list.created':
+      return (
+        <>
+          created <span className="text-[#3a72ee] font-medium">"{activity.data.list_title}"</span> list
+        </>
+      )
+    case 'list.renamed':
+      return (
+        <>
+          renamed list from <span className="text-[#3a72ee] font-medium">"{activity.data.old_title}"</span> to <span className="text-[#3a72ee] font-medium">"{activity.data.new_title}"</span>
+        </>
+      )
+    case 'list.deleted':
+      return (
+        <>
+          deleted <span className="text-[#3a72ee] font-medium">"{activity.data.list_title}"</span> list
+        </>
+      )
+    default:
+      return <span>performed an action</span>
+  }
+}
+
+function formatTimeAgo(dateString) {
+  const now = new Date()
+  const date = new Date(dateString)
+  const diffInSeconds = Math.floor((now - date) / 1000)
+  
+  if (diffInSeconds < 60) {
+    return `${diffInSeconds} seconds ago`
+  }
+  
+  const diffInMinutes = Math.floor(diffInSeconds / 60)
+  if (diffInMinutes < 60) {
+    return `${diffInMinutes} minute${diffInMinutes > 1 ? 's' : ''} ago`
+  }
+  
+  const diffInHours = Math.floor(diffInMinutes / 60)
+  if (diffInHours < 24) {
+    return `${diffInHours} hour${diffInHours > 1 ? 's' : ''} ago`
+  }
+  
+  const diffInDays = Math.floor(diffInHours / 24)
+  if (diffInDays < 7) {
+    return `${diffInDays} day${diffInDays > 1 ? 's' : ''} ago`
+  }
+  
+  return date.toLocaleDateString()
+}
+
+export default function ActivitySidebar({ isCollapsed, onToggleCollapse, activities = [] }) {
   const [showAllActivities, setShowAllActivities] = useState(false)
 
   const toggleShowAllActivities = () => {
@@ -43,172 +119,30 @@ export default function ActivitySidebar({ isCollapsed, onToggleCollapse }) {
         
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
           <div className="space-y-4">
-            <div className="flex items-start space-x-3">
-              <div className="w-8 h-8 bg-[#3a72ee] rounded-full flex items-center justify-center flex-shrink-0">
-                <span className="text-white text-sm font-semibold">KG</span>
+            {activities.length === 0 ? (
+              <div className="text-center py-8">
+                <p className="text-[#6b7a90] text-sm">No activity yet</p>
               </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm text-[#0c2144]">
-                  <span className="font-medium">khushi gusain</span> added <span className="text-[#3a72ee] font-medium">"Design new landing page"</span> to <span className="text-[#3a72ee] font-medium">"In Progress"</span>
-                </p>
-                <p className="text-xs text-[#6b7a90] mt-1">2 minutes ago</p>
-              </div>
-            </div>
-
-            <div className="flex items-start space-x-3">
-              <div className="w-8 h-8 bg-[#3a72ee] rounded-full flex items-center justify-center flex-shrink-0">
-                <span className="text-white text-sm font-semibold">KG</span>
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm text-[#0c2144]">
-                  <span className="font-medium">khushi gusain</span> added <span className="text-[#3a72ee] font-medium">"Fix login bug"</span> to <span className="text-[#3a72ee] font-medium">"To Do"</span>
-                </p>
-                <p className="text-xs text-[#6b7a90] mt-1">5 minutes ago</p>
-              </div>
-            </div>
-
-            <div className="flex items-start space-x-3">
-              <div className="w-8 h-8 bg-[#3a72ee] rounded-full flex items-center justify-center flex-shrink-0">
-                <span className="text-white text-sm font-semibold">KG</span>
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm text-[#0c2144]">
-                  <span className="font-medium">khushi gusain</span> added <span className="text-[#3a72ee] font-medium">"Update user dashboard"</span> to <span className="text-[#3a72ee] font-medium">"Testing"</span>
-                </p>
-                <p className="text-xs text-[#6b7a90] mt-1">12 minutes ago</p>
-              </div>
-            </div>
-
-            <div className="flex items-start space-x-3">
-              <div className="w-8 h-8 bg-[#3a72ee] rounded-full flex items-center justify-center flex-shrink-0">
-                <span className="text-white text-sm font-semibold">KG</span>
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm text-[#0c2144]">
-                  <span className="font-medium">khushi gusain</span> created <span className="text-[#3a72ee] font-medium">"Testing"</span> list
-                </p>
-                <p className="text-xs text-[#6b7a90] mt-1">25 minutes ago</p>
-              </div>
-            </div>
-
-            <div className="flex items-start space-x-3">
-              <div className="w-8 h-8 bg-[#3a72ee] rounded-full flex items-center justify-center flex-shrink-0">
-                <span className="text-white text-sm font-semibold">KG</span>
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm text-[#0c2144]">
-                  <span className="font-medium">khushi gusain</span> added this board to <span className="text-[#3a72ee] font-medium">"Trello Workspace"</span>
-                </p>
-                <p className="text-xs text-[#6b7a90] mt-1">1 hour ago</p>
-              </div>
-            </div>
-
-            <div className="flex items-start space-x-3">
-              <div className="w-8 h-8 bg-[#3a72ee] rounded-full flex items-center justify-center flex-shrink-0">
-                <span className="text-white text-sm font-semibold">KG</span>
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm text-[#0c2144]">
-                  <span className="font-medium">khushi gusain</span> moved <span className="text-[#3a72ee] font-medium">"API documentation"</span> to <span className="text-[#3a72ee] font-medium">"Done"</span>
-                </p>
-                <p className="text-xs text-[#6b7a90] mt-1">1.5 hours ago</p>
-              </div>
-            </div>
-
-            <div className="flex items-start space-x-3">
-              <div className="w-8 h-8 bg-[#3a72ee] rounded-full flex items-center justify-center flex-shrink-0">
-                <span className="text-white text-sm font-semibold">KG</span>
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm text-[#0c2144]">
-                  <span className="font-medium">khushi gusain</span> updated <span className="text-[#3a72ee] font-medium">"Database optimization"</span>
-                </p>
-                <p className="text-xs text-[#6b7a90] mt-1">2 hours ago</p>
-              </div>
-            </div>
-
-            {!showAllActivities && (
-              <button
-                onClick={toggleShowAllActivities}
-                className="w-full text-xs text-[#3a72ee] hover:text-[#2456f1] font-medium transition-colors cursor-pointer py-2 hover:bg-gray-50 rounded"
-              >
-                Show more activities
-              </button>
+            ) : (
+              activities.map((activity) => (
+                <div key={activity.id} className="flex items-start space-x-3">
+                  <div className="w-8 h-8 bg-[#3a72ee] rounded-full flex items-center justify-center flex-shrink-0">
+                    <span className="text-white text-sm font-semibold">
+                      {activity.actor?.display_name?.charAt(0)?.toUpperCase() || 'U'}
+                    </span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-[#0c2144]">
+                      <span className="font-medium">{activity.actor?.display_name || 'Unknown'}</span>{' '}
+                      {getActivityText(activity)}
+                    </p>
+                    <p className="text-xs text-[#6b7a90] mt-1">
+                      {formatTimeAgo(activity.created_at)}
+                    </p>
+                  </div>
+                </div>
+              ))
             )}
-
-            {showAllActivities && (
-              <>
-                <div className="flex items-start space-x-3">
-                  <div className="w-8 h-8 bg-[#3a72ee] rounded-full flex items-center justify-center flex-shrink-0">
-                    <span className="text-white text-sm font-semibold">KG</span>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm text-[#0c2144]">
-                      <span className="font-medium">khushi gusain</span> renamed <span className="text-[#3a72ee] font-medium">"Backlog"</span> to <span className="text-[#3a72ee] font-medium">"To Do"</span>
-                    </p>
-                    <p className="text-xs text-[#6b7a90] mt-1">2.5 hours ago</p>
-                  </div>
-                </div>
-
-                <div className="flex items-start space-x-3">
-                  <div className="w-8 h-8 bg-[#3a72ee] rounded-full flex items-center justify-center flex-shrink-0">
-                    <span className="text-white text-sm font-semibold">KG</span>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm text-[#0c2144]">
-                      <span className="font-medium">khushi gusain</span> archived <span className="text-[#3a72ee] font-medium">"Old feature request"</span>
-                    </p>
-                    <p className="text-xs text-[#6b7a90] mt-1">3 hours ago</p>
-                  </div>
-                </div>
-
-                <div className="flex items-start space-x-3">
-                  <div className="w-8 h-8 bg-[#3a72ee] rounded-full flex items-center justify-center flex-shrink-0">
-                    <span className="text-white text-sm font-semibold">KG</span>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm text-[#0c2144]">
-                      <span className="font-medium">khushi gusain</span> set due date for <span className="text-[#3a72ee] font-medium">"User testing"</span> to <span className="text-[#3a72ee] font-medium">Dec 15</span>
-                    </p>
-                    <p className="text-xs text-[#6b7a90] mt-1">4 hours ago</p>
-                  </div>
-                </div>
-
-                <div className="flex items-start space-x-3">
-                  <div className="w-8 h-8 bg-[#3a72ee] rounded-full flex items-center justify-center flex-shrink-0">
-                    <span className="text-white text-sm font-semibold">KG</span>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm text-[#0c2144]">
-                      <span className="font-medium">khushi gusain</span> added label <span className="text-[#3a72ee] font-medium">"Bug"</span> to <span className="text-[#3a72ee] font-medium">"Fix navigation"</span>
-                    </p>
-                    <p className="text-xs text-[#6b7a90] mt-1">5 hours ago</p>
-                  </div>
-                </div>
-
-                <div className="flex items-start space-x-3">
-                  <div className="w-8 h-8 bg-[#3a72ee] rounded-full flex items-center justify-center flex-shrink-0">
-                    <span className="text-white text-sm font-semibold">KG</span>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm text-[#0c2144]">
-                      <span className="font-medium">khushi gusain</span> commented on <span className="text-[#3a72ee] font-medium">"API Integration"</span>
-                    </p>
-                    <p className="text-xs text-[#6b7a90] mt-1">6 hours ago</p>
-                  </div>
-                </div>
-
-                <button
-                  onClick={toggleShowAllActivities}
-                  className="w-full text-xs text-[#6b7a90] hover:text-[#0c2144] font-medium transition-colors cursor-pointer py-2 hover:bg-gray-50 rounded"
-                >
-                  Show less
-                </button>
-              </>
-            )}
-
-            <div className="text-center">
-            </div>
           </div>
         </div>
       </div>

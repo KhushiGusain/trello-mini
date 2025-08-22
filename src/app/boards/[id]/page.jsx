@@ -6,44 +6,44 @@ import { useEffect, use, useState } from 'react'
 import { Button } from '@/components/ui'
 import KanbanBoard from '@/components/boards/KanbanBoard'
 import ActivitySidebar from '@/components/boards/ActivitySidebar'
+import { useBoard } from '@/hooks/useBoard'
 
 export default function BoardPage({ params }) {
   const { user, loading, signOut } = useAuth()
   const router = useRouter()
   const { id } = use(params)
-  const [board, setBoard] = useState(null)
-  const [isLoading, setIsLoading] = useState(true)
-  const [isActivitySidebarCollapsed, setIsActivitySidebarCollapsed] = useState(false);
+  const [isActivitySidebarCollapsed, setIsActivitySidebarCollapsed] = useState(false)
+  const [boardMembers, setBoardMembers] = useState([])
   
-  const [lists, setLists] = useState([
-    {
-      id: '1',
-      title: 'Backlog',
-      position: 1,
-      cards: [
-        { id: '1', title: 'Design System Components', position: 1 },
-        { id: '2', title: 'User Research Plan', position: 2 },
-        { id: '3', title: 'API Documentation', position: 3 }
-      ]
-    },
-    {
-      id: '2',
-      title: 'In Progress',
-      position: 2,
-      cards: [
-        { id: '4', title: 'Prototype Design', position: 1 },
-        { id: '5', title: 'Database Schema', position: 2 }
-      ]
-    },
-    {
-      id: '3',
-      title: 'Done',
-      position: 3,
-      cards: [
-        { id: '6', title: 'User Research', position: 1 }
-      ]
-    }
-  ])
+  const {
+    board,
+    lists,
+    labels,
+    activities,
+    userRole,
+    loading: boardLoading,
+    error: boardError,
+    refetch,
+    createList,
+    updateList,
+    deleteList,
+    createCard,
+    updateCard,
+    deleteCard,
+    updateListsOrder,
+    updateCardsOrder,
+    updateBoard,
+    getCardComments,
+    addCardComment,
+    getCardLabels,
+    addCardLabel,
+    removeCardLabel,
+    getCardAssignees,
+    addCardAssignee,
+    removeCardAssignee,
+    getBoardMembers,
+    refreshBoardLabels,
+  } = useBoard(id)
 
   useEffect(() => {
     if (!loading && !user) {
@@ -52,34 +52,36 @@ export default function BoardPage({ params }) {
   }, [user, loading, router])
 
   useEffect(() => {
-    if (user) {
-      fetchBoard()
-    }
-  }, [user, id])
-
-  const fetchBoard = async () => {
-    try {
-      const response = await fetch(`/api/boards/${id}`)
-      if (response.ok) {
-        const data = await response.json()
-        setBoard(data)
+    if (board && getBoardMembers) {
+      const fetchMembers = async () => {
+        try {
+          const members = await getBoardMembers()
+          setBoardMembers(members)
+        } catch (error) {
+          console.error('Error fetching board members:', error)
+        }
       }
-    } catch (error) {
-      console.error('Error fetching board:', error)
-    } finally {
-      setIsLoading(false)
+      fetchMembers()
     }
-  }
+  }, [board, getBoardMembers])
 
   const toggleActivitySidebar = () => {
     setIsActivitySidebarCollapsed(!isActivitySidebarCollapsed)
   }
 
   const handleListsChange = (newLists) => {
-    setLists(newLists)
+    updateListsOrder(newLists)
   }
 
-  if (loading || isLoading) {
+  const handleBoardUpdate = async (updates) => {
+    try {
+      await updateBoard(updates)
+    } catch (error) {
+      console.error('Error updating board:', error)
+    }
+  }
+
+  if (loading || boardLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#eff1f1]">
         <div className="text-center">
@@ -96,6 +98,25 @@ export default function BoardPage({ params }) {
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#3a72ee] mx-auto mb-4"></div>
           <p className="text-[#6b7a90]">Redirecting...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (boardError) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#eff1f1]">
+        <div className="text-center">
+          <div className="text-red-500 mb-4">
+            <svg className="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+            </svg>
+          </div>
+          <h2 className="text-xl font-semibold text-[#0c2144] mb-2">Error Loading Board</h2>
+          <p className="text-[#6b7a90] mb-4">{boardError}</p>
+          <Button onClick={() => router.push('/boards')} className="bg-[#3a72ee] text-white">
+            Back to Boards
+          </Button>
         </div>
       </div>
     )
@@ -183,12 +204,9 @@ export default function BoardPage({ params }) {
                   <div className="relative">
                     <select className="px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm text-[#0c2144] focus:outline-none focus:ring-2 focus:ring-[#3a72ee] focus:border-transparent cursor-pointer appearance-none pr-8">
                       <option value="">All Labels</option>
-                      <option value="design">Design</option>
-                      <option value="bug">Bug</option>
-                      <option value="feature">Feature</option>
-                      <option value="research">Research</option>
-                      <option value="backend">Backend</option>
-                      <option value="frontend">Frontend</option>
+                      {labels?.map(label => (
+                        <option key={label.id} value={label.id}>{label.name}</option>
+                      ))}
                     </select>
                     <svg className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -231,16 +249,38 @@ export default function BoardPage({ params }) {
               </div>
             </div>
             
-            <KanbanBoard lists={lists} onListsChange={handleListsChange} />
+            <KanbanBoard
+              lists={lists}
+              onListsChange={handleListsChange}
+              onCreateList={createList}
+              onUpdateList={updateList}
+              onDeleteList={deleteList}
+              onCreateCard={createCard}
+              onUpdateCard={updateCard}
+              onDeleteCard={deleteCard}
+              onUpdateCardsOrder={updateCardsOrder}
+              boardId={id}
+              boardLabels={labels}
+              boardMembers={boardMembers}
+              onGetCardComments={getCardComments}
+              onAddCardComment={addCardComment}
+              onGetCardLabels={getCardLabels}
+              onAddCardLabel={addCardLabel}
+              onRemoveCardLabel={removeCardLabel}
+              onGetCardAssignees={getCardAssignees}
+              onAddCardAssignee={addCardAssignee}
+              onRemoveCardAssignee={removeCardAssignee}
+              onRefreshBoardLabels={refreshBoardLabels}
+            />
           </div>
           
           <ActivitySidebar 
             isCollapsed={isActivitySidebarCollapsed} 
-            onToggleCollapse={toggleActivitySidebar} 
+            onToggleCollapse={toggleActivitySidebar}
+            activities={activities}
           />
         </div>
       </div>
     </div>
   )
 }
-
