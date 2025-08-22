@@ -51,7 +51,8 @@ Fill in your Supabase credentials. For environment variables reference, visit: [
 4. Execute the script to create all tables, indexes.
 
 ### 4. Create Test Accounts
-1. Start the development server: ```bash
+1. Start the development server:
+```bash
 npm run dev
 # or
 yarn dev
