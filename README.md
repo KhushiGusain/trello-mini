@@ -1,119 +1,135 @@
-# Mini Trello
+# Mini Trello  
 
-A modern, lightweight Trello clone built with Next.js App Router for efficient task and project management.
+A lightweight, real-time Trello-inspired app built with **Next.js** and **Supabase**, designed to make task and project management simple, collaborative, and fast.  
 
-## Features
+## Tech Stack & Why I Chose It  
 
-- ✨ Modern authentication pages (Login & Signup)
-- 🎨 Beautiful UI with custom color scheme
-- 📱 Responsive design
-- 🔒 Form validation and password strength indicator
-- 🎯 Clean component architecture
-- ⚡ Built with Next.js 14 App Router
-- 🏢 **Workspace Management** - Create and switch between different workspaces (Personal, Company, etc.)
-- 👥 Board member management (invite, remove, role management)
-- 🔍 Real-time search and filtering
-- 📝 Card management with labels, assignees, and comments
-- 📊 Activity tracking and logging
-- 🎯 Drag-and-drop Kanban board functionality
+- **Frontend**: Next.js 15 (App Router) → server-side rendering, great performance, and smooth developer experience.  
+- **Backend**: Supabase → handles database, authentication, and real-time updates in one place.  
+- **Styling**: Tailwind CSS → clean, responsive UI built quickly with consistent theming.  
+- **Real-time**: Supabase Realtime → enables live updates like presence indicators and collaboration.  
 
-## Getting Started
+This stack was chosen because it covers everything needed for a real-time, multi-user app with minimal setup and strong integration between frontend and backend.  
 
-First, run the development server:
+## Key Features  
 
+- **Authentication** – Secure login with email/password and social providers (Supabase Auth).  
+- **Workspaces** – Create and switch between multiple workspaces.  
+- **Real-time Collaboration** – See live presence and updates instantly from other members.  
+- **Kanban Boards** – Organize tasks into lists with drag-and-drop cards.  
+- **Labels & Assignees** – Add labels and assign team members to tasks.  
+- **Comments** – Discuss tasks in real time directly on cards.  
+- **Due Dates** – Track deadlines with clear visual reminders.  
+- **Search & Filters** – Quickly find cards by title, label, or assignee.  
+- **Responsive UI** – Works seamlessly on both desktop and mobile.  
+
+## 🛠️ Setup Instructions
+
+### Prerequisites
+- Node.js 18+ 
+- npm or yarn
+- Supabase account
+
+### 1. Install Dependencies
+```bash
+npm install
+# or
+yarn install
+```
+
+### 2. Environment Setup
+Create a `.env.local` file in the root directory:
+```bash
+cp .env.example .env.local
+```
+Fill in your Supabase credentials. For environment variables reference, visit: [Environment Variables](https://anotepad.com/note/read/cssrnwcj)
+
+### 3. Database Setup
+1. Create a new Supabase project
+2. Go to your Supabase SQL Editor
+3. Copy and paste the SQL contents from: [Database Schema](https://dbdiagram.io/d/68a8f8531e7a6119673877b7)
+4. Execute the script to create all tables, indexes.
+
+### 4. Create Test Accounts
+1. Start the development server: ```bash
+npm run dev
+# or
+yarn dev
+```
+2. Open [http://localhost:3000](http://localhost:3000)
+3. Create at least 2 user accounts through the signup page for collaboration testing.
+4. The database script will automatically use these accounts to create sample data
+
+### 5. Run the Development Server
 ```bash
 npm run dev
 # or
 yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 6. Real-time Features
+Real-time features are automatically enabled through Supabase Realtime. No additional server setup required.
 
-## Workspace Management
+## 🗄️ Database Schema Overview
 
-The app now supports multiple workspaces, allowing you to organize your boards by context:
+For the complete database schema diagram, visit: [Database Schema](https://dbdiagram.io/d/68a8f8531e7a6119673877b7)
 
-- **Personal Workspace**: Created automatically for all users - perfect for personal projects and tasks
-- **Company/Team Workspaces**: Create additional workspaces for different organizations, teams, or projects
-- **Workspace Switching**: Easily switch between workspaces using the dropdown in the sidebar
-- **Isolated Boards**: Each workspace contains its own set of boards - no mixing between personal and work projects
-- **Easy Creation**: Add new workspaces with just a name (e.g., "Marketing Team", "Design Projects", "Home")
 
-### How it works:
-1. When you sign up, a "Personal" workspace is automatically created
-2. Create additional workspaces using the "+" button in the workspace switcher
-3. All boards you create will belong to the currently selected workspace
-4. Switch workspaces to see only the boards for that specific context
-5. Each workspace is completely isolated - perfect for separating work and personal projects
+### Key Features
+- **Real-time updates** via Supabase Realtime
+- **Row Level Security** for data protection
+- **Full-text search** on card titles and descriptions
+- **Audit trail** with activity logging
 
-## Project Structure
+## 📱 Screenshots
 
+### Authentication & User Interface
+![Login and signup interface with clean design](screenshots/loginSignup.png)
+
+### Personal Boards Dashboard
+![Personal boards page showing user's boards and workspace options](screenshots/PersonalBoardsPage.png)
+
+### Workspace Boards Overview
+![Workspace boards page with team collaboration features](screenshots/WorkspaceBoardsPage.png)
+
+### Kanban Board Interface
+![Kanban board with lists, cards, and drag-and-drop functionality](screenshots/KanbanBoard.png)
+
+### Card Details & Management
+![Card details modal with comments, labels, assignees, and due dates](screenshots/CardDetails.png)
+
+### Create New Board Modal
+![Create board modal with title, description, and background options](screenshots/CreateNewBoardModal.png)
+
+### Workspace Member Management
+![Workspace member management interface for collaboration](screenshots/workspaceMembers.png)
+
+## 🚀 Live Demo
+
+**Live Demo**: [https://treeeee-89641958063.asia-south2.run.app/](https://treeeee-89641958063.asia-south2.run.app/)
+
+### Test Accounts for Interviewers
+For easy testing experience, use these pre-loaded accounts:
+- **Email**: khushigusain05@gmail.com | **Password**: admin123
+- **Email**: saksham@gmail.com | **Password**: admin123
+
+These accounts have dummy data loaded for a complete demonstration of all features.
+
+
+### Manual Deployment
+```bash
+npm run build
+npm start
 ```
-src/
-├── app/
-│   ├── auth/
-│   │   ├── login/           # Login page
-│   │   └── signup/          # Signup page
-│   ├── globals.css          # Global styles and color variables
-│   ├── layout.js
-│   └── page.js
-├── components/
-│   ├── ui/                  # Reusable UI components
-│   │   ├── Button.jsx       # Primary, secondary, ghost variants
-│   │   ├── Input.jsx        # Form input with error states
-│   │   ├── Checkbox.jsx     # Custom checkbox component
-│   │   ├── PasswordStrength.jsx # Password strength indicator
-│   │   └── index.js         # Component exports
-│   └── auth/                # Auth-specific components
-└── lib/                     # Utility functions
-```
 
-## Color Palette
+## Next Steps
 
-The app uses a carefully crafted color scheme:
+- [ ] **File Attachments**: Add drag-and-drop file upload to cards
+- [ ] **Advanced Permissions**: Implement granular role-based access control
+- [ ] **Offline Support**: Add service worker for offline functionality
+- [ ] **Integrations**: Add Slack, GitHub, and other third-party integrations
+- [ ] **Templates**: Create board and card templates
+- [ ] **Advanced Analytics**: Add board usage analytics and insights
+- [ ] **Advanced Search**: Implement full-text search with filters
+- [ ] **Dark Mode**: Implement dark theme support
 
-- **Primary Blue**: `#3a72ee` (buttons, links)
-- **Primary Hover**: `#2456f1` (button hover states)
-- **Navy**: `#0c2144` (headings, primary text)
-- **Muted Gray**: `#6b7a90` (secondary text)
-- **Background**: `#eff1f1` (page background)
-- **Surface**: `#ffffff` (cards, forms)
-- **Error**: `#ff1b45` (validation errors)
-- **Success**: `#83fe1d` (success states)
-
-## Authentication Pages
-
-### Login Page (`/auth/login`)
-- Email and password fields
-- "Forgot password" link
-- Google Sign-in option
-- Link to signup page
-
-### Signup Page (`/auth/signup`)
-- Full name, email, password, confirm password fields
-- Real-time password strength indicator
-- Terms of service agreement checkbox
-- Google Sign-up option
-- Link to login page
-
-## Tech Stack
-
-- **Framework**: Next.js 14 with App Router
-- **Database**: Supabase (PostgreSQL)
-- **Styling**: Tailwind CSS with custom CSS variables
-- **Components**: Custom React components
-- **Validation**: Client-side form validation
-- **Icons**: Inline SVG
-- **Authentication**: JWT-based with Supabase Auth
-
-## Development
-
-The project uses modern development practices:
-- ESLint for code quality
-- Component-based architecture
-- Custom CSS variables for consistent theming
-- Responsive design principles
