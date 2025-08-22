@@ -284,8 +284,8 @@ export default function BoardPage({ params }) {
                       className="text-2xl font-bold text-[#0c2144] hover:underline cursor-pointer"
                       onClick={handleTitleEdit}
                     >
-                      {board?.title || 'Loading Board...'}
-                    </h1>
+                    {board?.title || 'Loading Board...'}
+                  </h1>
                   )}
                   <span className="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-[#e8f0ff] text-[#3a72ee]">
                     {board?.visibility === 'workspace' ? 'Workspace' : 'Private'}
@@ -329,19 +329,19 @@ export default function BoardPage({ params }) {
 
         <div className="flex flex-1 min-h-0 h-full">
           <div className="flex-1 flex flex-col min-w-0 min-h-0">
-                         <div className="bg-white border-b border-[#e5e7eb] px-6 py-4">
-               <div className="flex items-center space-x-6">
+            <div className="bg-white border-b border-[#e5e7eb] px-6 py-4">
+              <div className="flex items-center space-x-6">
                  <div className="relative" ref={searchRef}>
-                   <input
-                     type="text"
-                     placeholder="Search cards..."
+                  <input
+                    type="text"
+                    placeholder="Search cards..."
                      value={searchQuery}
                      onChange={(e) => handleSearch(e.target.value)}
-                     className="w-64 px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm text-[#0c2144] placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#3a72ee] focus:border-transparent"
-                   />
-                   <svg className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                   </svg>
+                    className="w-64 px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm text-[#0c2144] placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#3a72ee] focus:border-transparent"
+                  />
+                  <svg className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
                    
                    {showSearchResults && searchResults.length > 0 && (
                      <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-60 overflow-y-auto">
@@ -357,70 +357,70 @@ export default function BoardPage({ params }) {
                        ))}
                      </div>
                    )}
-                 </div>
-                 
-                 <div className="flex items-center space-x-4">
-                   <div className="relative">
+                </div>
+                
+                <div className="flex items-center space-x-4">
+                  <div className="relative">
                      <select 
                        value={selectedLabel}
                        onChange={(e) => handleFilterChange('label', e.target.value)}
                        className="px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm text-[#0c2144] focus:outline-none focus:ring-2 focus:ring-[#3a72ee] focus:border-transparent cursor-pointer appearance-none pr-8"
                      >
-                       <option value="">All Labels</option>
+                      <option value="">All Labels</option>
                        {labels?.map(label => (
                          <option key={label.id} value={label.id}>{label.name}</option>
                        ))}
-                     </select>
-                     <svg className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                     </svg>
-                   </div>
-                   
-                   <div className="relative">
+                    </select>
+                    <svg className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </div>
+                  
+                  <div className="relative">
                      <select 
                        value={selectedMember}
                        onChange={(e) => handleFilterChange('member', e.target.value)}
                        className="px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm text-[#0c2144] focus:outline-none focus:ring-2 focus:ring-[#3a72ee] focus:border-transparent cursor-pointer appearance-none pr-8"
                      >
-                       <option value="">All Members</option>
-                       <option value="me">Assigned to me</option>
-                       <option value="unassigned">Unassigned</option>
+                      <option value="">All Members</option>
+                      <option value="me">Assigned to me</option>
+                      <option value="unassigned">Unassigned</option>
                        {boardMembers?.map(member => (
                          <option key={member.id} value={member.id}>{member.display_name}</option>
                        ))}
-                     </select>
-                     <svg className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                     </svg>
-                   </div>
-                   
-                   <div className="relative">
+                    </select>
+                    <svg className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </div>
+                  
+                  <div className="relative">
                      <select 
                        value={selectedDueDate}
                        onChange={(e) => handleFilterChange('dueDate', e.target.value)}
                        className="px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm text-[#0c2144] focus:outline-none focus:ring-2 focus:ring-[#3a72ee] focus:border-transparent cursor-pointer appearance-none pr-8"
                      >
-                       <option value="">Due Date</option>
-                       <option value="overdue">Overdue</option>
-                       <option value="today">Due today</option>
-                       <option value="week">Due this week</option>
-                       <option value="month">Due this month</option>
-                       <option value="no-due">No due date</option>
-                     </select>
-                     <svg className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                     </svg>
-                   </div>
-                   
+                      <option value="">Due Date</option>
+                      <option value="overdue">Overdue</option>
+                      <option value="today">Due today</option>
+                      <option value="week">Due this week</option>
+                      <option value="month">Due this month</option>
+                      <option value="no-due">No due date</option>
+                    </select>
+                    <svg className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </div>
+                  
                    <button 
                      onClick={clearFilters}
                      className="px-2 py-1.5 text-xs text-[#6b7a90] hover:text-[#0c2144] hover:bg-gray-100 rounded transition-colors cursor-pointer"
                    >
-                     Clear
-                   </button>
-                 </div>
-               </div>
-             </div>
+                    Clear
+                  </button>
+                </div>
+              </div>
+            </div>
             
                          <KanbanBoard
                lists={getFilteredLists()}
@@ -444,9 +444,9 @@ export default function BoardPage({ params }) {
                onAddCardAssignee={addCardAssignee}
                onRemoveCardAssignee={removeCardAssignee}
                onRefreshBoardLabels={refreshBoardLabels}
-             />
-          </div>
-          
+                        />
+                      </div>
+                      
           <ActivitySidebar 
             isCollapsed={isActivitySidebarCollapsed} 
             onToggleCollapse={toggleActivitySidebar}
