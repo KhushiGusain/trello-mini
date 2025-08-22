@@ -49,9 +49,11 @@ This stack was chosen because it covers everything needed for a real-time, multi
 **Hosted on Google Cloud**: [https://treeeee-89641958063.asia-south2.run.app/](https://treeeee-89641958063.asia-south2.run.app/)
 
 ### Login Details
-Use these login details:
+For easy testing experience, use these pre-loaded accounts:
 - **Email**: khushigusain05@gmail.com | **Password**: admin123
 - **Email**: saksham@gmail.com | **Password**: admin123
+
+These accounts have dummy data loaded for a complete demonstration of all features.
 
 ### Database Schema
 For the complete database schema diagram, visit: [Database Schema](https://dbdiagram.io/d/68a8f8531e7a6119673877b7)
