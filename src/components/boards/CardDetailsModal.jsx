@@ -114,7 +114,7 @@ export default function CardDetailsModal({
       setCardLabels(card.labels || [])
       setCardAssignees(card.assignees || [])
     }
-  }, [isOpen, card?.id])
+  }, [isOpen, card?.id, card?.labels, card?.assignees])
 
   if (!isOpen || !card) return null
 

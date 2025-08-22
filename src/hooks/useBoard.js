@@ -370,7 +370,7 @@ export default function useBoard(boardId) {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ 
-            type: 'card_moved',
+            type: 'cards_reordered',
             newLists: newLists
           })
         }).catch(err => console.error('Broadcast error:', err))
@@ -592,12 +592,86 @@ export default function useBoard(boardId) {
             setLists(prevLists => prevLists.filter(list => list.id !== data.listId))
           } else if (data.type === 'lists_reordered' && data.newLists) {
             setLists(data.newLists)
-          } else if (data.type === 'card_label_added' || data.type === 'card_label_removed') {
-            refetch()
-          } else if (data.type === 'card_assignee_added' || data.type === 'card_assignee_removed') {
-            refetch()
+          } else if (data.type === 'cards_reordered' && data.newLists) {
+            setLists(data.newLists)
+          } else if (data.type === 'card_label_added' && data.cardId && data.label) {
+            setLists(prevLists => {
+              const updatedLists = prevLists.map(list => ({
+                ...list,
+                cards: (list.cards || []).map(card => {
+                  if (card.id === data.cardId) {
+                    const existingLabel = (card.labels || []).find(label => label.id === data.label.id)
+                    if (existingLabel) {
+                      return card
+                    }
+                    return { ...card, labels: [...(card.labels || []), data.label] }
+                  }
+                  return card
+                })
+              }))
+              return updatedLists
+            })
+          } else if (data.type === 'card_label_removed' && data.cardId && data.labelId) {
+            setLists(prevLists => {
+              const updatedLists = prevLists.map(list => ({
+                ...list,
+                cards: (list.cards || []).map(card => {
+                  if (card.id === data.cardId) {
+                    return { ...card, labels: (card.labels || []).filter(label => label.id !== data.labelId) }
+                  }
+                  return card
+                })
+              }))
+              return updatedLists
+            })
+          } else if (data.type === 'card_assignee_added' && data.cardId && data.userId) {
+            setLists(prevLists => {
+              const updatedLists = prevLists.map(list => ({
+                ...list,
+                cards: (list.cards || []).map(card => {
+                  if (card.id === data.cardId) {
+                    const existingAssignee = (card.assignees || []).find(assignee => assignee.id === data.userId)
+                    if (existingAssignee) {
+                      return card
+                    }
+                    return { ...card, assignees: [...(card.assignees || []), { id: data.userId }] }
+                  }
+                  return card
+                })
+              }))
+              return updatedLists
+            })
+          } else if (data.type === 'card_assignee_removed' && data.cardId && data.userId) {
+            setLists(prevLists => {
+              const updatedLists = prevLists.map(list => ({
+                ...list,
+                cards: (list.cards || []).map(card => {
+                  if (card.id === data.cardId) {
+                    return { ...card, assignees: (card.assignees || []).filter(assignee => assignee.id !== data.userId) }
+                  }
+                  return card
+                })
+              }))
+              return updatedLists
+            })
           } else if (data.type === 'board_updated' && data.updatedBoard) {
             setBoard(prev => ({ ...prev, ...data.updatedBoard }))
+          } else if (data.type === 'comment_added' && data.cardId && data.comment) {
+            setLists(prevLists => {
+              const updatedLists = prevLists.map(list => ({
+                ...list,
+                cards: (list.cards || []).map(card => {
+                  if (card.id === data.cardId) {
+                    return { 
+                      ...card, 
+                      comments: [...(card.comments || []), data.comment]
+                    }
+                  }
+                  return card
+                })
+              }))
+              return updatedLists
+            })
           } else if (data.type === 'member_added' || data.type === 'member_removed') {
             refetch()
           } else if (data.type === 'activity_added' && data.activity) {
@@ -672,7 +746,11 @@ export default function useBoard(boardId) {
           fetch(`/api/boards/${boardId}/events`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ type: 'card_updated' })
+            body: JSON.stringify({ 
+              type: 'comment_added',
+              cardId: cardId,
+              comment: comment
+            })
           }).catch(err => console.error('Broadcast error:', err))
         }
         
@@ -709,9 +787,25 @@ export default function useBoard(boardId) {
             body: JSON.stringify({ 
               type: 'card_label_added',
               cardId: cardId,
-              labelId: labelId
+              labelId: labelId,
+              label: result
             })
           }).catch(err => console.error('Broadcast error:', err))
+        }
+        
+        if (board && board.visibility === 'private') {
+          setActivities(prev => [{
+            id: `temp_${Date.now()}`,
+            type: 'card.labeled',
+            data: {
+              card_id: cardId,
+              card_title: lists.flatMap(l => l.cards || []).find(c => c.id === cardId)?.title || 'Unknown Card',
+              label_id: labelId,
+              label_name: result.name
+            },
+            actor: { display_name: board.created_by },
+            created_at: new Date().toISOString()
+          }, ...prev.slice(0, 19)])
         }
         
         return result
@@ -738,6 +832,20 @@ export default function useBoard(boardId) {
               labelId: labelId
             })
           }).catch(err => console.error('Broadcast error:', err))
+        }
+        
+        if (board && board.visibility === 'private') {
+          setActivities(prev => [{
+            id: `temp_${Date.now()}`,
+            type: 'card.unlabeled',
+            data: {
+              card_id: cardId,
+              card_title: lists.flatMap(l => l.cards || []).find(c => c.id === cardId)?.title || 'Unknown Card',
+              label_id: labelId
+            },
+            actor: { display_name: board.created_by },
+            created_at: new Date().toISOString()
+          }, ...prev.slice(0, 19)])
         }
         
         return result

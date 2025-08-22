@@ -47,6 +47,18 @@ export default function KanbanBoard({
     }
   }, [cardToOpen])
 
+  useEffect(() => {
+    if (selectedCard && lists.length > 0) {
+      const updatedCard = lists
+        .flatMap(list => list.cards || [])
+        .find(card => card.id === selectedCard.id)
+      
+      if (updatedCard && JSON.stringify(updatedCard) !== JSON.stringify(selectedCard)) {
+        setSelectedCard(updatedCard)
+      }
+    }
+  }, [lists, selectedCard?.id])
+
   const startEditList = (listId, currentTitle) => {
     setEditingListId(listId)
     setEditingText(currentTitle)
