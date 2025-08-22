@@ -22,7 +22,9 @@ export default function BoardPage({ params }) {
   const [selectedDueDate, setSelectedDueDate] = useState('')
   const [searchResults, setSearchResults] = useState([])
   const [showSearchResults, setShowSearchResults] = useState(false)
+  const [selectedResultIndex, setSelectedResultIndex] = useState(-1)
   const searchRef = useRef(null)
+  const [cardToOpen, setCardToOpen] = useState(null)
   
   const {
     board,
@@ -87,6 +89,15 @@ export default function BoardPage({ params }) {
     }
   }, [])
 
+  useEffect(() => {
+    if (cardToOpen) {
+      const timer = setTimeout(() => {
+        setCardToOpen(null)
+      }, 100)
+      return () => clearTimeout(timer)
+    }
+  }, [cardToOpen])
+
   const toggleActivitySidebar = () => {
     setIsActivitySidebarCollapsed(!isActivitySidebarCollapsed)
   }
@@ -134,6 +145,7 @@ export default function BoardPage({ params }) {
 
   const handleSearch = (query) => {
     setSearchQuery(query)
+    setSelectedResultIndex(-1)
     if (query.trim()) {
       const results = []
       lists.forEach(list => {
@@ -154,12 +166,10 @@ export default function BoardPage({ params }) {
   const handleSearchResultClick = (card) => {
     setShowSearchResults(false)
     setSearchQuery('')
-    const list = lists.find(l => l.id === card.list_id)
+    const list = lists.find(l => l.cards.some(c => c.id === card.id))
     if (list) {
-      const cardElement = document.querySelector(`[data-card-id="${card.id}"]`)
-      if (cardElement) {
-        cardElement.click()
-      }
+      const cardWithListInfo = { ...card, list_id: list.id }
+      setCardToOpen({ card: cardWithListInfo, listTitle: list.title })
     }
   }
 
@@ -337,24 +347,96 @@ export default function BoardPage({ params }) {
                     placeholder="Search cards..."
                      value={searchQuery}
                      onChange={(e) => handleSearch(e.target.value)}
+                     onKeyDown={(e) => {
+                       if (e.key === 'ArrowDown') {
+                         e.preventDefault()
+                         setSelectedResultIndex(prev => 
+                           prev < searchResults.length - 1 ? prev + 1 : 0
+                         )
+                       } else if (e.key === 'ArrowUp') {
+                         e.preventDefault()
+                         setSelectedResultIndex(prev => 
+                           prev > 0 ? prev - 1 : searchResults.length - 1
+                         )
+                       } else if (e.key === 'Enter' && selectedResultIndex >= 0 && searchResults[selectedResultIndex]) {
+                         e.preventDefault()
+                         handleSearchResultClick(searchResults[selectedResultIndex])
+                       } else if (e.key === 'Escape') {
+                         setShowSearchResults(false)
+                         setSearchQuery('')
+                       }
+                     }}
                     className="w-64 px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm text-[#0c2144] placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#3a72ee] focus:border-transparent"
                   />
                   <svg className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                   </svg>
                    
-                   {showSearchResults && searchResults.length > 0 && (
+                   {showSearchResults && (
                      <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-60 overflow-y-auto">
-                       {searchResults.map((card) => (
-                         <div
-                           key={card.id}
-                           onClick={() => handleSearchResultClick(card)}
-                           className="px-4 py-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0"
-                         >
-                           <div className="font-medium text-[#0c2144]">{card.title}</div>
-                           <div className="text-sm text-[#6b7a90]">in {card.listTitle}</div>
+                       {searchResults.length > 0 ? (
+                         searchResults.map((card, index) => (
+                           <div
+                             key={card.id}
+                             onClick={() => handleSearchResultClick(card)}
+                             className={`px-4 py-3 cursor-pointer border-b border-gray-100 last:border-b-0 transition-colors ${
+                               index === selectedResultIndex 
+                                 ? 'bg-[#e8f0ff] border-[#3a72ee]' 
+                                 : 'hover:bg-gray-50'
+                             }`}
+                           >
+                             <div className="font-medium text-[#0c2144] mb-1">{card.title}</div>
+                             <div className="flex items-center justify-between">
+                               <div className="text-sm text-[#6b7a90]">in {card.listTitle}</div>
+                               <div className="flex items-center space-x-2">
+                                 {card.labels && card.labels.length > 0 && (
+                                   <div className="flex space-x-1">
+                                     {card.labels.slice(0, 2).map((label) => (
+                                       <div
+                                         key={label.id}
+                                         className="w-3 h-3 rounded-full"
+                                         style={{ backgroundColor: label.color }}
+                                         title={label.name}
+                                       />
+                                     ))}
+                                     {card.labels.length > 2 && (
+                                       <span className="text-xs text-[#6b7a90]">+{card.labels.length - 2}</span>
+                                     )}
+                                   </div>
+                                 )}
+                                 {card.assignees && card.assignees.length > 0 && (
+                                   <div className="flex -space-x-1">
+                                     {card.assignees.slice(0, 3).map((assignee) => (
+                                       <div
+                                         key={assignee.id}
+                                         className="w-5 h-5 rounded-full bg-blue-500 flex items-center justify-center border border-white"
+                                         title={assignee.display_name}
+                                       >
+                                         <span className="text-xs text-white font-medium">
+                                           {assignee.display_name.charAt(0).toUpperCase()}
+                                         </span>
+                                       </div>
+                                     ))}
+                                     {card.assignees.length > 3 && (
+                                       <span className="text-xs text-[#6b7a90] ml-1">+{card.assignees.length - 3}</span>
+                                     )}
+                                   </div>
+                                 )}
+                               </div>
+                             </div>
+                           </div>
+                         ))
+                       ) : (
+                         <div className="px-4 py-6 text-center">
+                           <div className="text-[#6b7a90] mb-2">
+                             <svg className="w-8 h-8 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                             </svg>
+                           </div>
+                           <p className="text-sm text-[#6b7a90]">No cards found</p>
+                           <p className="text-xs text-[#6b7a90] mt-1">Try a different search term</p>
                          </div>
-                       ))}
+                       )}
                      </div>
                    )}
                 </div>
@@ -444,6 +526,7 @@ export default function BoardPage({ params }) {
                onAddCardAssignee={addCardAssignee}
                onRemoveCardAssignee={removeCardAssignee}
                onRefreshBoardLabels={refreshBoardLabels}
+               cardToOpen={cardToOpen}
                         />
                       </div>
                       

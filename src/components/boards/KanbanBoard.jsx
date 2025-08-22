@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import CardDetailsModal from './CardDetailsModal'
 import List from './List'
 import AddListButton from './AddListButton'
@@ -26,7 +26,8 @@ export default function KanbanBoard({
   onGetCardAssignees,
   onAddCardAssignee,
   onRemoveCardAssignee,
-  onRefreshBoardLabels
+  onRefreshBoardLabels,
+  cardToOpen
 }) {
   const [editingListId, setEditingListId] = useState(null)
   const [editingCardId, setEditingCardId] = useState(null)
@@ -37,6 +38,13 @@ export default function KanbanBoard({
   const [draggedList, setDraggedList] = useState(null)
   const [selectedCard, setSelectedCard] = useState(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
+
+  useEffect(() => {
+    if (cardToOpen && cardToOpen.card) {
+      setSelectedCard(cardToOpen.card)
+      setIsModalOpen(true)
+    }
+  }, [cardToOpen])
 
   const startEditList = (listId, currentTitle) => {
     setEditingListId(listId)

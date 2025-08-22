@@ -1,6 +1,12 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
+import ModalHeader from './modal/ModalHeader'
+import CardTitle from './modal/CardTitle'
+import ActionButtons from './modal/ActionButtons'
+import DisplayPills from './modal/DisplayPills'
+import DescriptionSection from './modal/DescriptionSection'
+import CommentsSection from './modal/CommentsSection'
 
 export default function CardDetailsModal({ 
   isOpen, 
@@ -200,7 +206,6 @@ export default function CardDetailsModal({
     try {
       setIsCreatingLabel(true)
       
-      // Use the color name as the label name if no custom title is provided
       const labelName = customTitle || colorName
       console.log('handleAddLabel called with:', { colorName, colorValue, customTitle, labelName })
       
@@ -256,8 +261,6 @@ export default function CardDetailsModal({
 
   const handleCreateLabel = () => {
     if (selectedColor) {
-      // Always create a label when Save is clicked, even if title is empty
-      // If title is empty, use the color name
       const title = labelTitle.trim() || selectedColor.name
       console.log('Creating label with:', { title, colorName: selectedColor.name, colorValue: selectedColor.color })
       handleAddLabel(selectedColor.name, selectedColor.color, title)
@@ -346,523 +349,75 @@ export default function CardDetailsModal({
         className="bg-white rounded-lg shadow-2xl max-w-4xl w-full max-h-[70vh] overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
-
-        <div className="flex items-center justify-between p-6 border-b border-gray-200">
-          <div className="flex items-center space-x-4">
-            <div className="flex items-center space-x-2">
-              <button className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-medium text-gray-700 flex items-center space-x-1 transition-colors">
-                <span>{listTitle}</span>
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-              </button>
-            </div>
-          </div>
-          <div className="flex items-center space-x-2">
-            <button
-              onClick={handleClose}
-              className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          </div>
-        </div>
+        <ModalHeader listTitle={listTitle} onClose={handleClose} />
 
         <div className="flex h-[calc(70vh-80px)]">
-
           <div className="flex-1 p-6 overflow-y-auto">
             <div className="space-y-6">
+              <CardTitle
+                title={title}
+                isEditingTitle={isEditingTitle}
+                onTitleChange={setTitle}
+                onSaveTitle={handleSaveTitle}
+                onStartEditTitle={setIsEditingTitle}
+              />
 
-              <div className="flex items-center space-x-3">
-                <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0">
-                  <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                </div>
-                <div className="flex-1">
-                  {isEditingTitle ? (
-                    <input
-                      type="text"
-                      value={title}
-                      onChange={(e) => setTitle(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') handleSaveTitle()
-                        if (e.key === 'Escape') setIsEditingTitle(false)
-                      }}
-                      onBlur={handleSaveTitle}
-                      className="w-full text-2xl font-bold text-gray-900 border-none outline-none bg-transparent"
-                      autoFocus
-                    />
-                  ) : (
-                    <h1 
-                      className="text-2xl font-bold text-gray-900 cursor-pointer hover:bg-gray-50 px-2 py-1 rounded transition-colors"
-                      onClick={() => setIsEditingTitle(true)}
-                    >
-                      {title}
-                    </h1>
-                  )}
-                </div>
-              </div>
+              <ActionButtons
+                activeDropdown={activeDropdown}
+                onToggleDropdown={toggleDropdown}
+                labelTitle={labelTitle}
+                onLabelTitleChange={setLabelTitle}
+                selectedColor={selectedColor}
+                onColorSelect={handleColorSelect}
+                predefinedColors={predefinedColors}
+                boardLabels={boardLabels}
+                cardLabels={cardLabels}
+                onRemoveLabel={handleRemoveLabel}
+                onCreateLabel={handleCreateLabel}
+                isCreatingLabel={isCreatingLabel}
+                onCancelLabels={() => {
+                  setSelectedColor(null)
+                  setLabelTitle('')
+                  setActiveDropdown(null)
+                }}
+                boardMembers={boardMembers}
+                cardAssignees={cardAssignees}
+                onAddAssignee={handleAddAssignee}
+                onRemoveAssignee={handleRemoveAssignee}
+                dueDate={dueDate}
+                onSaveDueDate={handleSaveDueDate}
+                labelsDropdownRef={labelsDropdownRef}
+                membersDropdownRef={membersDropdownRef}
+              />
 
-              <div className="flex items-center space-x-2">
-                <div className="relative">
-                  <button 
-                    onClick={() => toggleDropdown('labels')}
-                    data-dropdown="labels"
-                    className="px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-medium text-gray-700 flex items-center space-x-2 transition-colors cursor-pointer"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
-                    </svg>
-                    <span>Labels</span>
-                  </button>
-                  {activeDropdown === 'labels' && (
-                    <div 
-                      ref={labelsDropdownRef}
-                      className="absolute top-full left-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg z-50 p-3 min-w-[280px]"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <div className="space-y-3">
-                        <input
-                          type="text"
-                          placeholder="Enter label name..."
-                          value={labelTitle}
-                          onChange={(e) => setLabelTitle(e.target.value)}
-                          onClick={(e) => e.stopPropagation()}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
-                              if (selectedColor && !isCreatingLabel) {
-                                handleCreateLabel()
-                              }
-                            } else if (e.key === 'Escape') {
-                              setSelectedColor(null)
-                              setLabelTitle('')
-                              setActiveDropdown(null)
-                            }
-                          }}
-                          className="w-full px-3 py-2 border border-gray-200 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          autoFocus
-                        />
-                        
-                        <div className="grid grid-cols-4 gap-1">
-                          {predefinedColors.map(colorOption => {
-                            const boardLabel = boardLabels.find(label => label.color_hex === colorOption.color)
-                            const isApplied = cardLabels.some(cardLabel => cardLabel.color_hex === colorOption.color)
-                            const isSelected = selectedColor?.color === colorOption.color
-                            
-                            return (
-                              <div 
-                                key={colorOption.color} 
-                                className={`flex items-center justify-center p-2 rounded cursor-pointer transition-colors relative ${
-                                  isApplied ? 'bg-blue-50 border border-blue-200' : 
-                                  isSelected ? 'bg-gray-100 border-2 border-blue-400' : 'hover:bg-gray-50'
-                                }`}
-                                onClick={() => {
-                                  if (isApplied) {
-                                    const labelToRemove = cardLabels.find(cardLabel => cardLabel.color_hex === colorOption.color)
-                                    if (labelToRemove) {
-                                      handleRemoveLabel(labelToRemove.id)
-                                    }
-                                  } else {
-                                    setSelectedColor(colorOption)
-                                  }
-                                }}
-                              >
-                                <div className={`w-6 h-6 rounded`} style={{ backgroundColor: colorOption.color }}></div>
-                              </div>
-                            )
-                          })}
-                        </div>
-                        
-                        <div className="flex items-center space-x-2 pt-2">
-                          <button
-                            onClick={handleCreateLabel}
-                            disabled={!selectedColor || isCreatingLabel}
-                            className={`px-3 py-1.5 text-sm rounded transition-colors cursor-pointer ${
-                              selectedColor && !isCreatingLabel
-                                ? 'bg-blue-500 text-white hover:bg-blue-600' 
-                                : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                            }`}
-                          >
-                            {isCreatingLabel ? 'Saving...' : 'Save'}
-                          </button>
-                          <button
-                            onClick={() => {
-                              setSelectedColor(null)
-                              setLabelTitle('')
-                              setActiveDropdown(null)
-                            }}
-                            className="px-3 py-1.5 text-gray-600 text-sm rounded hover:bg-gray-100 transition-colors cursor-pointer"
-                          >
-                            Cancel
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-                <button 
-                  onClick={() => toggleDropdown('dates')}
-                  data-dropdown="dates"
-                  className="px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-medium text-gray-700 flex items-center space-x-2 transition-colors relative cursor-pointer"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  <span>Dates</span>
-                  {activeDropdown === 'dates' && (
-                    <div className="absolute top-full left-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg z-50 p-3 min-w-[250px]">
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium text-gray-700">Set due date:</label>
-                        <input
-                          id="due-date-input"
-                          type="date"
-                          value={dueDate ? dueDate.split('T')[0] : ''}
-                          onChange={(e) => {
-                            const selectedDate = e.target.value
-                            if (selectedDate) {
-                              handleSaveDueDate(selectedDate)
-                            }
-                          }}
-                          onClick={(e) => e.stopPropagation()}
-                          className="w-full mt-2 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
-                          min={new Date().toISOString().split('T')[0]}
-                        />
-                      </div>
-                    </div>
-                  )}
-                </button>
-                <button 
-                  onClick={() => toggleDropdown('members')}
-                  data-dropdown="members"
-                  className="px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-medium text-gray-700 flex items-center space-x-2 transition-colors relative cursor-pointer"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                  </svg>
-                  <span>Members</span>
-                  {activeDropdown === 'members' && (
-                    <div ref={membersDropdownRef} className="absolute top-full left-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg z-50 p-3 min-w-[250px]">
-                      <div className="mb-3">
-                        <h4 className="text-sm font-medium text-gray-900 mb-2">Board members</h4>
-                        <div className="space-y-1">
-                          {boardMembers.length === 0 ? (
-                            <p className="text-sm text-gray-500 py-2">No members found</p>
-                          ) : (
-                            boardMembers.map(member => {
-                              const isAssigned = cardAssignees.some(assignee => assignee.id === member.id)
-                              return (
-                                <div 
-                                  key={member.id} 
-                                  className={`flex items-center space-x-3 p-2 rounded cursor-pointer transition-colors ${
-                                    isAssigned 
-                                      ? 'bg-blue-50 border border-blue-200' 
-                                      : 'hover:bg-gray-50'
-                                  }`}
-                                  onClick={() => isAssigned ? handleRemoveAssignee(member.id) : handleAddAssignee(member.id)}
-                                >
-                                  <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
-                                    <span className="text-sm text-white font-medium">
-                                      {member.display_name?.charAt(0)?.toUpperCase() || 'U'}
-                                    </span>
-                                  </div>
-                                  <div className="flex-1">
-                                    <span className="text-sm font-medium text-gray-900">{member.display_name}</span>
-                                  </div>
-                                  <div className="flex items-center space-x-2">
-                                    {isAssigned && (
-                                      <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                      </svg>
-                                    )}
-                                    <span className="text-xs text-gray-500">
-                                      {isAssigned ? 'Assigned' : 'Click to assign'}
-                                    </span>
-                                  </div>
-                                </div>
-                              )
-                            })
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </button>
-              </div>
+              <DisplayPills
+                cardLabels={cardLabels}
+                onRemoveLabel={handleRemoveLabel}
+                cardAssignees={cardAssignees}
+                onRemoveAssignee={handleRemoveAssignee}
+                dueDate={dueDate}
+                onRemoveDueDate={handleRemoveDueDate}
+              />
 
-              <div className="space-y-4">
-                {cardLabels.length > 0 && (
-                  <div>
-                    <h4 className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">Labels</h4>
-                    <div className="flex flex-wrap gap-1">
-                      {cardLabels.map(label => (
-                        <div 
-                          key={label.id}
-                          className="group relative flex items-center px-3 py-1.5 rounded-full text-sm font-medium text-white transition-all duration-200 hover:shadow-md"
-                          style={{ backgroundColor: label.color_hex }}
-                        >
-                          <span>{label.name || label.color_hex}</span>
-                          <button 
-                            onClick={() => handleRemoveLabel(label.id)}
-                            className="ml-2 w-4 h-4 rounded-full flex items-center justify-center hover:bg-black hover:bg-opacity-20 transition-colors cursor-pointer opacity-0 group-hover:opacity-100"
-                          >
-                            <span className="text-xs">×</span>
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {cardAssignees.length > 0 && (
-                  <div>
-                    <h4 className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">Members</h4>
-                    <div className="flex flex-wrap gap-2">
-                      {cardAssignees.map(assignee => (
-                        <div 
-                          key={assignee.id}
-                          className="group relative flex items-center space-x-2 px-2 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
-                        >
-                          <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
-                            <span className="text-xs text-white font-medium">
-                              {assignee.display_name?.charAt(0)?.toUpperCase() || 'U'}
-                            </span>
-                          </div>
-                          <span className="text-sm font-medium text-gray-700">{assignee.display_name}</span>
-                          <button 
-                            onClick={() => handleRemoveAssignee(assignee.id)}
-                            className="w-4 h-4 rounded-full flex items-center justify-center hover:bg-red-100 transition-colors cursor-pointer opacity-0 group-hover:opacity-100"
-                          >
-                            <span className="text-xs text-red-600">×</span>
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {dueDate && (
-                  <div>
-                    <h4 className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">Due date</h4>
-                    <div className={`group relative inline-flex items-center space-x-2 px-3 py-2 border rounded-lg transition-colors ${
-                      (() => {
-                        const today = new Date()
-                        const due = new Date(dueDate)
-                        const diffTime = due.getTime() - today.getTime()
-                        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
-                        
-                        if (diffDays < 0) {
-                          return 'bg-red-50 hover:bg-red-100 border-red-200'
-                        } else if (diffDays <= 1) {
-                          return 'bg-orange-50 hover:bg-orange-100 border-orange-200'
-                        } else if (diffDays <= 7) {
-                          return 'bg-yellow-50 hover:bg-yellow-100 border-yellow-200'
-                        } else {
-                          return 'bg-green-50 hover:bg-green-100 border-green-200'
-                        }
-                      })()
-                    }`}>
-                      <svg className={`w-4 h-4 ${
-                        (() => {
-                          const today = new Date()
-                          const due = new Date(dueDate)
-                          const diffTime = due.getTime() - today.getTime()
-                          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
-                          
-                          if (diffDays < 0) {
-                            return 'text-red-600'
-                          } else if (diffDays <= 1) {
-                            return 'text-orange-600'
-                          } else if (diffDays <= 7) {
-                            return 'text-yellow-600'
-                          } else {
-                            return 'text-green-600'
-                          }
-                        })()
-                      }`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                      <span className={`text-sm font-medium ${
-                        (() => {
-                          const today = new Date()
-                          const due = new Date(dueDate)
-                          const diffTime = due.getTime() - today.getTime()
-                          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
-                          
-                          if (diffDays < 0) {
-                            return 'text-red-800'
-                          } else if (diffDays <= 1) {
-                            return 'text-orange-800'
-                          } else if (diffDays <= 7) {
-                            return 'text-yellow-800'
-                          } else {
-                            return 'text-green-800'
-                          }
-                        })()
-                      }`}>
-                        {new Date(dueDate).toLocaleDateString('en-US', { 
-                          weekday: 'short', 
-                          month: 'short', 
-                          day: 'numeric',
-                          year: 'numeric'
-                        })}
-                      </span>
-                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                        (() => {
-                          const today = new Date()
-                          const due = new Date(dueDate)
-                          const diffTime = due.getTime() - today.getTime()
-                          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
-                          
-                          if (diffDays < 0) {
-                            return 'bg-red-200 text-red-700'
-                          } else if (diffDays <= 1) {
-                            return 'bg-orange-200 text-orange-700'
-                          } else if (diffDays <= 7) {
-                            return 'bg-yellow-200 text-yellow-700'
-                          } else {
-                            return 'bg-green-200 text-green-700'
-                          }
-                        })()
-                      }`}>
-                        {(() => {
-                          const today = new Date()
-                          const due = new Date(dueDate)
-                          const diffTime = due.getTime() - today.getTime()
-                          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
-                          
-                          if (diffDays < 0) {
-                            return 'Overdue'
-                          } else if (diffDays === 0) {
-                            return 'Due today'
-                          } else if (diffDays === 1) {
-                            return 'Due tomorrow'
-                          } else if (diffDays <= 7) {
-                            return 'Due soon'
-                          } else {
-                            return 'Upcoming'
-                          }
-                        })()}
-                      </span>
-                      <button 
-                        onClick={handleRemoveDueDate}
-                        className="w-4 h-4 rounded-full flex items-center justify-center hover:bg-red-100 transition-colors cursor-pointer opacity-0 group-hover:opacity-100"
-                      >
-                        <span className="text-xs text-red-600">×</span>
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              <div className="space-y-3">
-                <div className="flex items-center space-x-2">
-                  <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
-                  <h3 className="text-lg font-semibold text-gray-900">Description</h3>
-                </div>
-                
-                {isEditingDescription ? (
-                  <div className="space-y-3">
-                    <textarea
-                      value={description}
-                      onChange={(e) => setDescription(e.target.value)}
-                      placeholder="Add a more detailed description..."
-                      className="w-full px-4 py-3 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-                      rows="4"
-                      autoFocus
-                    />
-                    <div className="flex items-center space-x-2">
-                      <button
-                        onClick={handleSaveDescription}
-                        className="px-4 py-2 bg-blue-500 text-white text-sm font-medium rounded-lg hover:bg-blue-600 transition-colors cursor-pointer"
-                      >
-                        Save
-                      </button>
-                      <button
-                        onClick={() => {
-                          setIsEditingDescription(false)
-                          setDescription(card?.description || '')
-                        }}
-                        className="px-4 py-2 text-gray-500 hover:text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-100 transition-colors cursor-pointer"
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <div 
-                    className="bg-gray-50 rounded-lg p-4 min-h-[80px] cursor-pointer hover:bg-gray-100 transition-colors"
-                    onClick={() => setIsEditingDescription(true)}
-                  >
-                    {description ? (
-                      <p className="text-sm text-gray-700 whitespace-pre-wrap">{description}</p>
-                    ) : (
-                      <p className="text-sm text-gray-500">Add a more detailed description...</p>
-                    )}
-                  </div>
-                )}
-              </div>
+              <DescriptionSection
+                description={description}
+                isEditingDescription={isEditingDescription}
+                onDescriptionChange={setDescription}
+                onSaveDescription={handleSaveDescription}
+                onStartEditDescription={setIsEditingDescription}
+                onCancelEditDescription={() => setIsEditingDescription(false)}
+                originalDescription={card?.description || ''}
+              />
             </div>
           </div>
 
-          <div className="w-80 border-l border-gray-200 p-6 overflow-y-auto">
-            <div className="space-y-4">
-              <div className="flex items-center space-x-2">
-                <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                </svg>
-                <h3 className="text-lg font-semibold text-gray-900">Comments and activity</h3>
-              </div>
-
-              <div className="space-y-3">
-                <textarea
-                  value={commentText}
-                  onChange={(e) => setCommentText(e.target.value)}
-                  placeholder="Write a comment..."
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-                  rows="2"
-                />
-                <button
-                  onClick={handleAddComment}
-                  disabled={!commentText.trim()}
-                  className="px-4 py-2 bg-blue-500 text-white text-sm font-medium rounded-lg hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
-                >
-                  Save
-                </button>
-              </div>
-
-              <div className="space-y-3">
-                {comments.length === 0 ? (
-                  <div className="text-center py-4">
-                    <p className="text-sm text-gray-500">No comments yet</p>
-                  </div>
-                ) : (
-                  comments.map((comment) => (
-                    <div key={comment.id} className="flex items-start space-x-3">
-                      <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0">
-                        <span className="text-xs text-white font-medium">
-                          {comment.author?.display_name?.charAt(0)?.toUpperCase() || 'U'}
-                        </span>
-                      </div>
-                      <div className="flex-1">
-                        <p className="text-sm text-gray-700">
-                          <span className="font-medium">{comment.author?.display_name || 'Unknown'}</span>
-                        </p>
-                        <p className="text-sm text-gray-600 mt-1">{comment.body}</p>
-                        <button className="text-xs text-gray-500 hover:text-gray-700 mt-1">
-                          {formatTimeAgo(comment.created_at)}
-                        </button>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
-          </div>
+          <CommentsSection
+            commentText={commentText}
+            onCommentTextChange={setCommentText}
+            onAddComment={handleAddComment}
+            comments={comments}
+            formatTimeAgo={formatTimeAgo}
+          />
         </div>
       </div>
     </div>
